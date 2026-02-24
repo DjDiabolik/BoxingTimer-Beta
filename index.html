@@ -415,7 +415,7 @@ function renamePreset(oldName) {
 }
 
 function applyP(n) { 
-    state.lastLoadedPreset = n; config = JSON.parse(JSON.stringify(presets[n]));
+    state.lastLoadedPreset = n; config = JSON.parse(JSON.stringify(presets[n])); save();
     upgradeData(); applyThemeToCSS(); updateLabUI();
     document.getElementById("active-preset-controls").style.display = "block";
     document.getElementById("active-preset-name").textContent = n;
@@ -573,8 +573,14 @@ function resetTimer() {
     initTimer();
 }
 
+// --- caricamento dati e applicazione preset ---
 load(); 
-initTimer();
+
+if(state.lastLoadedPreset) {
+    applyP(state.lastLoadedPreset); // Carica preset e aggiorna UI
+} else {
+    initTimer();
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
