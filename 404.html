@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boxing Timer Beta - Reindirizzamento</title>
+    <style>
+        body {
+            background-color: #121212; /* Dark mode come la tua app */
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .box {
+            border: 2px solid #e74c3c; /* Rosso "ring" */
+            padding: 30px;
+            border-radius: 15px;
+            background-color: #1e1e1e;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { margin-bottom: 10px; color: #e74c3c; }
+        p { font-size: 1.1rem; opacity: 0.9; }
+        #timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #f1c40f; /* Giallo avviso */
+            display: block;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h1>URL NON CORRETTO</h1>
+        <p>Ti stiamo riportando sul ring...</p>
+        <span id="timer">3</span>
+    </div>
+
+    <script>
+        var count = 3;
+        var countdownDisplay = document.getElementById("timer");
+
+        // Gestione del countdown visivo
+        var countdownTrigger = setInterval(function() {
+            count--;
+            countdownDisplay.textContent = count;
+            if (count <= 0) clearInterval(countdownTrigger);
+        }, 1000);
+
+        // Logica di reindirizzamento (dopo 3 secondi)
+        setTimeout(function() {
+            // pathname reale servito da GitHub Pages (case corretto)
+            var correctPath = window.location.pathname;
+
+            // forza redirect allo stesso path ma con case corretto
+            window.location.replace(correctPath);
+        }, 3000);
+    </script>
+</body>
+</html>
