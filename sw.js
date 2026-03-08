@@ -1,4 +1,4 @@
-// /BoxingTimer/new/sw.js
+// /BoxingTimer-Beta/sw.js - V6.3 BETA
 const CACHE_NAME = 'boxing-timer-beta';
 const assets = [
   '/BoxingTimer-Beta/',

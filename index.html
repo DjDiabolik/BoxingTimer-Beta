@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="./manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.2 BETA</title>
+<title>BOXING TIMER V6.3 BETA</title>
 
 <style>
 :root { --bg:#121212; --fight:#2e7d32; --rest:#d32f2f; --accent:#2196F3; --panel:#1e1e1e; }
@@ -72,7 +72,6 @@ button{ padding:18px;font-size:1.1rem; border:none;border-radius:12px; color:whi
 #phases-list button, .phase-header button, .random-toggle-btn { backdrop-filter: none; }
 
 .phase-dur-input { width: 60px; padding: 10px 5px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; text-align: center; font-weight:bold; }
-/* MODIFICA 6.2: Nuovo stile per l'input della label */
 .phase-label-input { flex-grow: 1; min-width: 80px; padding: 10px 8px; background: #111; color: #fff; border: 1px solid #444; border-radius: 5px; font-size: 0.85rem; }
 
 .type-toggle { width: 80px; padding: 12px 5px; border-radius: 5px; text-align: center; font-weight: bold; cursor: pointer; font-size: 0.7rem; text-transform: uppercase; }
@@ -116,7 +115,7 @@ button{ padding:18px;font-size:1.1rem; border:none;border-radius:12px; color:whi
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.2)</h3>
+ <h3>PRESET ALLENAMENTO (V6.3)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -211,14 +210,35 @@ const DEFAULT_AUDIO = {
 };
 
 let config = { 
- // MODIFICA 6.2: Aggiunta proprietà 'label' di default
  phases: [{type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}}],
  theme: JSON.parse(JSON.stringify(DEFAULT_THEME)),
  audio: JSON.parse(JSON.stringify(DEFAULT_AUDIO))
 };
 let presets = {};
-let state = { timeLeft: 0, totalTime: 0, currentRound: 1, phaseIndex: 0, isRunning: false, nextRandomTick: -1, lastLoadedPreset: null };
-let audioCtx, masterGain, compressor, wakeLock, lastTick;
+// MODIFICA 6.3: Aggiunta state.lastTickTimestamp per gestire il tempo reale (catch-up)
+let state = { timeLeft: 0, totalTime: 0, currentRound: 1, phaseIndex: 0, isRunning: false, nextRandomTick: -1, lastLoadedPreset: null, lastTickTimestamp: 0 };
+let audioCtx, masterGain, compressor, wakeLock;
+
+// --- LOGICA WEB WORKER (In-line) PER EVITARE IL FREEZE ---
+const workerCode = `
+  let timer = null;
+  self.onmessage = function(e) {
+    if (e.data === 'start') {
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => self.postMessage('tick'), 1000);
+    } else if (e.data === 'stop') {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
+`;
+const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+const timerWorker = new Worker(URL.createObjectURL(workerBlob));
+
+timerWorker.onmessage = function() {
+  if (state.isRunning) tick();
+};
+// -------------------------------------------------------
 
 function upgradeData() {
  if (!config.theme) config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME));
@@ -328,7 +348,6 @@ function renderPhases() {
  const container = document.getElementById("phases-list"); container.innerHTML = "";
  config.phases.forEach((p, idx) => {
  const div = document.createElement("div"); div.className = "phase-item";
- // MODIFICA 6.2: Aggiunto input per la label nella phase-header
  div.innerHTML = `
  <div class="phase-header">
  <div class="sort-controls">
@@ -363,7 +382,6 @@ function addPhase() {
  if (config.phases.length > 0) {
  newPhase = JSON.parse(JSON.stringify(config.phases[config.phases.length - 1]));
  } else {
- // MODIFICA 6.2: Aggiunta label vuota nell'oggetto base
  newPhase = {type:'fight', dur:60, label: '', random:{active:false, min:5, max:10}};
  }
  config.phases.push(newPhase);
@@ -423,7 +441,7 @@ function exportData() {
  const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
  const url = URL.createObjectURL(blob);
  const a = document.createElement('a');
- a.href = url; a.download = 'boxing_timer_v62_backup.json'; a.click();
+ a.href = url; a.download = 'boxing_timer_v63_backup.json'; a.click();
 }
 
 function importData(event) {
@@ -449,18 +467,35 @@ function setNextR() {
  } else state.nextRandomTick = -1;
 }
 
+// MODIFICA 6.3 BETA: Logica Catch-up con Web Worker
 function tick() {
  if(!state.isRunning) return;
- state.totalTime++;
- if(state.timeLeft > 1) {
- state.timeLeft--;
- if(config.phases[state.phaseIndex].type === 'rest' && state.timeLeft <= 3) audio.tick();
- if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { audio.sprint(); setNextR(); }
- } else nextPh();
+
+ const now = Date.now();
+ const elapsedSeconds = Math.floor((now - state.lastTickTimestamp) / 1000);
+
+ if (elapsedSeconds <= 0) return;
+
+ // Recuperiamo ogni secondo perso
+ for (let i = 0; i < elapsedSeconds; i++) {
+    state.totalTime++;
+    state.lastTickTimestamp += 1000;
+
+    if(state.timeLeft > 1) {
+        state.timeLeft--;
+        // Suoni eseguiti solo se siamo "al passo" o per segnali critici
+        if(config.phases[state.phaseIndex].type === 'rest' && state.timeLeft <= 3) audio.tick();
+        if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { 
+            audio.sprint(); 
+            setNextR(); 
+        }
+    } else {
+        nextPh();
+    }
+ }
  updateUI();
 }
 
-// MODIFICA 6.2: Funzione helper per determinare cosa scrivere a schermo
 function getPhaseLabel(p) {
  if(p.label && p.label.trim() !== "") return p.label.toUpperCase();
  return p.type === 'fight' ? "COMBATTI!" : "RIPOSO";
@@ -470,7 +505,6 @@ function nextPh() {
  audio.gong(); state.phaseIndex++;
  if(state.phaseIndex >= config.phases.length) { state.phaseIndex = 0; state.currentRound++; }
  state.timeLeft = config.phases[state.phaseIndex].dur;
- // MODIFICA 6.2: Usa la nuova funzione getPhaseLabel
  document.getElementById("status-display").textContent = getPhaseLabel(config.phases[state.phaseIndex]);
  setNextR(); updateTheme();
 }
@@ -479,26 +513,22 @@ async function toggleTimer() {
  ensureAudio();
  const btn = document.getElementById("btn-toggle");
  if(state.isRunning) { 
- state.isRunning = false; 
- releaseWakeLock(); 
- btn.textContent = "RIPRENDI";
+    state.isRunning = false; 
+    releaseWakeLock(); 
+    timerWorker.postMessage('stop'); // Ferma il worker
+    btn.textContent = "RIPRENDI";
  }
  else {
- state.isRunning = true; 
- await requestWakeLock(); 
- btn.textContent = "PAUSA";
- if(document.getElementById("status-display").textContent === "PRONTO?"){
- audio.gong(); 
- // MODIFICA 6.2: Usa la nuova funzione getPhaseLabel
- document.getElementById("status-display").textContent = getPhaseLabel(config.phases[0]);
- setNextR();
- }
- lastTick = performance.now();
- requestAnimationFrame(function lp(now){
- if(!state.isRunning) return;
- if(now - lastTick >= 1000){ tick(); lastTick = now - ((now - lastTick)%1000); }
- requestAnimationFrame(lp);
- });
+    state.isRunning = true; 
+    await requestWakeLock(); 
+    state.lastTickTimestamp = Date.now(); // Allinea al tempo reale
+    timerWorker.postMessage('start'); // Avvia il worker
+    btn.textContent = "PAUSA";
+    if(document.getElementById("status-display").textContent === "PRONTO?"){
+        audio.gong(); 
+        document.getElementById("status-display").textContent = getPhaseLabel(config.phases[0]);
+        setNextR();
+    }
  }
 }
 
@@ -538,6 +568,7 @@ function initTimer() {
  state.currentRound = 1; 
  state.phaseIndex = 0;
  state.isRunning = false;
+ timerWorker.postMessage('stop'); 
  document.getElementById("btn-toggle").textContent = "START";
  document.getElementById("status-display").textContent = "PRONTO?";
  updateUI(); 
