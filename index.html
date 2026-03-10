@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="./manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.3 BETA</title>
+<title>BOXING TIMER V6.4 BETA</title>
 
 <style>
 :root { --bg:#121212; --fight:#2e7d32; --rest:#d32f2f; --accent:#2196F3; --panel:#1e1e1e; }
@@ -115,7 +115,7 @@ button{ padding:18px;font-size:1.1rem; border:none;border-radius:12px; color:whi
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.3)</h3>
+ <h3>PRESET ALLENAMENTO (V6.4)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -215,7 +215,6 @@ let config = {
  audio: JSON.parse(JSON.stringify(DEFAULT_AUDIO))
 };
 let presets = {};
-// MODIFICA 6.3: Aggiunta state.lastTickTimestamp per gestire il tempo reale (catch-up)
 let state = { timeLeft: 0, totalTime: 0, currentRound: 1, phaseIndex: 0, isRunning: false, nextRandomTick: -1, lastLoadedPreset: null, lastTickTimestamp: 0 };
 let audioCtx, masterGain, compressor, wakeLock;
 
@@ -402,6 +401,7 @@ function renderPresets() {
  const d = document.createElement("div"); d.className = "preset-item";
  d.innerHTML = `
  <button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" onclick="applyP('${n}')">${n}</button>
+ <button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button>
  <button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button>
  <button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>`;
  c.appendChild(d);
@@ -436,12 +436,36 @@ function saveCurrentAsPreset() {
  applyP(n); document.getElementById("preset-name").value = "";
 }
 
+// --- MODIFICHE V6.4: GESTIONE EXPORT/IMPORT ---
+
 function exportData() {
- const data = { config, presets };
+ const data = { config, presets, exportType: 'FULL_BACKUP' };
  const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+ 
+ const now = new Date();
+ const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+ 
+ const fileName = `BoxingTimer_Backup_${ts}.json`;
  const url = URL.createObjectURL(blob);
  const a = document.createElement('a');
- a.href = url; a.download = 'boxing_timer_v63_backup.json'; a.click();
+ a.href = url; a.download = fileName; a.click();
+ URL.revokeObjectURL(url);
+}
+
+function exportSinglePreset(name) {
+ if (!presets[name]) return;
+ const data = { 
+    presetData: presets[name], 
+    presetName: name, 
+    exportType: 'SINGLE_PRESET' 
+ };
+ const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+ const safeName = name.replace(/[^a-z0-9]/gi, '_');
+ const fileName = `BT_Preset_${safeName}.json`;
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url; a.download = fileName; a.click();
+ URL.revokeObjectURL(url);
 }
 
 function importData(event) {
@@ -450,15 +474,56 @@ function importData(event) {
  const reader = new FileReader();
  reader.onload = (e) => {
  try {
- const imported = JSON.parse(e.target.result);
- if(imported.config) config = imported.config;
- if(imported.presets) presets = imported.presets;
- upgradeData(); applyThemeToCSS(); updateLabUI();
- save(); renderPhases(); renderPresets(); initTimer(); alert("Backup caricato con successo!");
- } catch(err) { alert("File non valido"); }
+    const imported = JSON.parse(e.target.result);
+
+    // CASO A: Importazione Singolo Preset
+    if (imported.exportType === 'SINGLE_PRESET') {
+        let name = imported.presetName;
+        let finalName = name;
+        let counter = 1;
+        while (presets[finalName]) {
+            finalName = `${name}_${counter}`;
+            counter++;
+        }
+        presets[finalName] = imported.presetData;
+        alert(`Preset "${finalName}" aggiunto alla tua lista!`);
+    } 
+    // CASO B: Backup Completo (o file legacy v6.3 senza exportType)
+    else if (imported.presets) {
+        const mode = confirm("Hai caricato un backup completo.\n\nPremi OK per AGGIUNGERE i preset a quelli esistenti.\nPremi ANNULLA per SOVRASCRIVERE TUTTO (perderai i dati attuali).");
+        
+        if (mode) { // MERGE
+            Object.keys(imported.presets).forEach(name => {
+                let finalName = name;
+                let counter = 1;
+                while (presets[finalName]) {
+                    finalName = `${name}_${counter}`;
+                    counter++;
+                }
+                presets[finalName] = imported.presets[name];
+            });
+            alert("Preset aggiunti correttamente!");
+        } else { // OVERWRITE
+            if(confirm("Sei sicuro di voler sovrascrivere tutto? Questa azione non è annullabile.")) {
+                if(imported.config) config = imported.config;
+                presets = imported.presets;
+                alert("Database ripristinato con successo!");
+            } else return;
+        }
+    } else {
+        throw new Error("Formato non valido");
+    }
+
+    upgradeData(); applyThemeToCSS(); updateLabUI();
+    save(); renderPhases(); renderPresets(); initTimer();
+ } catch(err) { 
+    alert("Errore nell'importazione: il file non è un backup valido del Boxing Timer."); 
+ }
  };
  reader.readAsText(file);
 }
+
+// --- FINE MODIFICHE V6.4 ---
 
 function setNextR() {
  const p = config.phases[state.phaseIndex];
@@ -467,23 +532,17 @@ function setNextR() {
  } else state.nextRandomTick = -1;
 }
 
-// MODIFICA 6.3 BETA: Logica Catch-up con Web Worker
 function tick() {
  if(!state.isRunning) return;
-
  const now = Date.now();
  const elapsedSeconds = Math.floor((now - state.lastTickTimestamp) / 1000);
-
  if (elapsedSeconds <= 0) return;
 
- // Recuperiamo ogni secondo perso
  for (let i = 0; i < elapsedSeconds; i++) {
     state.totalTime++;
     state.lastTickTimestamp += 1000;
-
     if(state.timeLeft > 1) {
         state.timeLeft--;
-        // Suoni eseguiti solo se siamo "al passo" o per segnali critici
         if(config.phases[state.phaseIndex].type === 'rest' && state.timeLeft <= 3) audio.tick();
         if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { 
             audio.sprint(); 
@@ -515,14 +574,14 @@ async function toggleTimer() {
  if(state.isRunning) { 
     state.isRunning = false; 
     releaseWakeLock(); 
-    timerWorker.postMessage('stop'); // Ferma il worker
+    timerWorker.postMessage('stop');
     btn.textContent = "RIPRENDI";
  }
  else {
     state.isRunning = true; 
     await requestWakeLock(); 
-    state.lastTickTimestamp = Date.now(); // Allinea al tempo reale
-    timerWorker.postMessage('start'); // Avvia il worker
+    state.lastTickTimestamp = Date.now();
+    timerWorker.postMessage('start');
     btn.textContent = "PAUSA";
     if(document.getElementById("status-display").textContent === "PRONTO?"){
         audio.gong(); 
@@ -538,8 +597,8 @@ function save() {
 }
 
 function load() {
- const c = localStorage.getItem('boxing_timer_config') || localStorage.getItem('box_v48_c');
- const p = localStorage.getItem('boxing_timer_presets') || localStorage.getItem('box_v48_p');
+ const c = localStorage.getItem('boxing_timer_config');
+ const p = localStorage.getItem('boxing_timer_presets');
  if(c) config = JSON.parse(c); 
  if(p) presets = JSON.parse(p);
  upgradeData(); 
@@ -608,7 +667,7 @@ if ('serviceWorker' in navigator) {
  window.addEventListener('load', () => {
  navigator.serviceWorker.register('./sw.js', { scope: '/BoxingTimer-Beta/' })
  .then(reg => {
- console.log('SW beta registrato', reg.scope);
+ console.log('SW registrato', reg.scope);
  reg.addEventListener('updatefound', () => {
  const newWorker = reg.installing;
  newWorker.addEventListener('statechange', () => {
@@ -618,7 +677,7 @@ if ('serviceWorker' in navigator) {
  });
  });
  })
- .catch(err => console.error('SW beta errore', err));
+ .catch(err => console.error('SW errore', err));
  });
 }
 </script>
