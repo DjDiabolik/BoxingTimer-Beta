@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="./manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.5</title>
+<title>BOXING TIMER V6.5.2</title>
 
 <style>
 :root { 
@@ -17,114 +17,60 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html, body {
+html { height: 100%; overflow: hidden; }
+
+body {
     overscroll-behavior: none;
-    height: 100%; width: 100%; margin: 0;
+    height: 100%; height: 100dvh;
+    width: 100%; margin: 0;
     background: var(--bg); color: white;
     font-family: system-ui, -apple-system, sans-serif;
     user-select: none;
     touch-action: manipulation;
-    overflow: hidden;
-}
-
-body {
     display: flex; flex-direction: column;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     transition: background .3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
 }
 
 body.fight-mode { background: var(--fight); }
 body.rest-mode { background: var(--rest); }
 
-/* --- HEADER --- */
 .app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    width: 100%;
-    z-index: 30;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 15px; width: 100%; z-index: 30; flex-shrink: 0;
 }
 
-#fs-btn { 
-    font-size: 0.75rem; padding: 8px 12px; 
-    background: rgba(255,255,255,0.1); border-radius: 8px; border: none; color: white;
-}
+#fs-btn { font-size: 0.75rem; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; border: none; color: white; }
+#total-display { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-align: center; flex-grow: 1; }
+#settings-btn { font-size: 1.5rem; background: none; border: none; color: white; cursor: pointer; padding: 5px; }
 
-#total-display { 
-    font-size: 0.9rem; font-weight: 600; opacity: 0.9; 
-    text-align: center; flex-grow: 1;
-}
-
-#settings-btn { 
-    font-size: 1.5rem; background: none; border: none; color: white; cursor: pointer; padding: 5px;
-}
-
-/* --- MAIN TIMER --- */
 .main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 10px;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 10px; min-height: 0;
 }
 
 #round-display { font-size: clamp(1.5rem, 5vh, 3rem); font-weight: 800; margin-bottom: 5px; }
 #status-display { font-size: clamp(1rem, 3vh, 1.8rem); letter-spacing: 2px; text-transform: uppercase; opacity: 0.9; }
 #time-display { 
-    font-size: clamp(5rem, 35vmin, 15rem); 
-    font-weight: 900; 
-    font-variant-numeric: tabular-nums; 
-    line-height: 1;
-    margin: 10px 0;
+    font-size: clamp(5rem, 35vmin, 15rem); font-weight: 900; 
+    font-variant-numeric: tabular-nums; line-height: 1; margin: 10px 0;
 }
 
-/* --- CONTROLLI --- */
-.controls {
-    display: flex; gap: 15px; justify-content: center; padding-bottom: 30px; width: 100%;
-}
-
-button { 
-    padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12px; 
-    color: white; font-weight: bold; background: rgba(255,255,255,.15); 
-    backdrop-filter: blur(5px); cursor: pointer;
-}
-
+.controls { display: flex; gap: 15px; justify-content: center; padding-bottom: 30px; width: 100%; flex-shrink: 0; }
+button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12px; color: white; font-weight: bold; background: rgba(255,255,255,.15); backdrop-filter: blur(5px); cursor: pointer; }
 #btn-toggle { background: var(--accent); min-width: 160px; font-size: 1.4rem; }
 
-/* --- SETTINGS PANEL (FIXED) --- */
 #settings-panel { 
     position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
-    display: none; /* Diventa flex via JS */
-    flex-direction: column; 
-    align-items: center; 
-    z-index: 1000; 
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch;
+    display: none; flex-direction: column; align-items: center; 
+    z-index: 1000; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 
-.view-container { 
-    width: 100%; 
-    max-width: 500px; /* Limita larghezza su Desktop e Tablet */
-    display: flex; 
-    flex-direction: column; 
-    padding: 60px 20px 40px; 
-}
-
-.setting-section { 
-    width: 100%; 
-    margin-bottom: 25px; 
-    border-bottom: 1px solid #333; 
-    padding-bottom: 15px; 
-    display: flex; 
-    flex-direction: column; 
-}
-
+.view-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; padding: 60px 20px 40px; }
+.setting-section { width: 100%; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; display: flex; flex-direction: column; }
 .setting-section h3 { color: var(--accent); margin-bottom: 12px; font-size: 1.1rem; }
 
-/* REQUISITI VISIVI COMPONENTI */
 .realtime-stats { background: #222; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; border: 1px solid #333; }
 .realtime-stats div { display: flex; justify-content: space-between; margin-bottom: 4px; }
 .stat-val { font-weight: bold; color: var(--accent); }
@@ -156,13 +102,13 @@ button {
 .backup-tools { display: flex; gap: 10px; margin-top: 15px; }
 .btn-tool { font-size: 0.75rem; padding: 10px; background: #444; flex: 1; border-radius: 8px; color:white; border:none; }
 
-/* Responsive Landscape */
-@media (max-height: 500px) {
-    .main-content { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
-    #time-display { font-size: 25vh; margin: 0; width: 100%; }
-    #round-display, #status-display { font-size: 1rem; margin: 0 10px; }
+@media (max-height: 500px) and (orientation: landscape) {
+    .main-content { flex-direction: row; flex-wrap: wrap; justify-content: space-around; align-content: center; }
+    #time-display { font-size: 40vh; margin: 0; width: 100%; }
+    #round-display, #status-display { font-size: 1.2rem; margin: 0 10px; flex: 0 1 auto; }
     .controls { padding-bottom: 10px; }
     button { padding: 10px 20px; font-size: 0.9rem; }
+    .app-header { padding: 5px 15px; }
 }
 </style>
 </head>
@@ -189,7 +135,7 @@ button {
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.5)</h3>
+ <h3>PRESET ALLENAMENTO (V6.5.2)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
