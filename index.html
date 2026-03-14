@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="./manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.5.4</title>
+<title>BOXING TIMER V6.6</title>
 
 <style>
 :root { 
@@ -73,7 +73,7 @@ button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12p
 
 .view-container { 
     width: 100%; max-width: 500px; display: flex; flex-direction: column; 
-    padding: 60px 15px 40px; /* Ridotto padding laterale generale */
+    padding: 60px 15px 40px; 
     overscroll-behavior: contain; 
 }
 
@@ -94,8 +94,8 @@ button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12p
 .phase-item { background: #222; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; overflow: hidden; width: 100%; }
 .phase-header { 
     display: flex; align-items: center; 
-    gap: 4px; /* Ridotto gap tra gli elementi della riga */
-    padding: 8px 4px; /* Padding interno ridotto */
+    gap: 4px; 
+    padding: 8px 4px; 
     background: #2a2a2a; 
     width: 100%;
 }
@@ -105,8 +105,8 @@ button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12p
 
 .phase-dur-input { width: 50px; flex-shrink: 0; padding: 8px 2px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; text-align: center; font-weight:bold; }
 .phase-label-input { 
-    flex: 1; /* Prende tutto lo spazio rimanente */
-    min-width: 0; /* Permette al campo di rimpicciolirsi se necessario invece di spingere fuori la X */
+    flex: 1; 
+    min-width: 0; 
     padding: 8px; background: #111; color: #fff; border: 1px solid #444; border-radius: 5px; font-size: 0.8rem; 
 }
 .type-toggle { width: 65px; flex-shrink: 0; padding: 10px 2px; border-radius: 5px; text-align: center; font-weight: bold; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; }
@@ -116,7 +116,7 @@ button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12p
 .btn-phase-action { background:#444; border:none; padding:8px; border-radius:5px; color:white; flex-shrink:0; cursor:pointer; }
 
 .phase-random-settings { background: #1a1a1a; padding: 10px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #333; font-size: 0.8rem; }
-.random-toggle-btn { padding: 6px 10px; border-radius: 4px; background: #333; color: #888; border:none; }
+.random-toggle-btn { padding: 6px 10px; border-radius: 4px; background: #333; color: #888; border:none; cursor:pointer; }
 .random-active { background: var(--accent); color: white; }
 .random-inputs { display: flex; align-items: center; gap: 5px; }
 .random-inputs input { width: 35px; background:#333; color:white; border:none; padding:5px; text-align:center; border-radius:4px; }
@@ -161,7 +161,7 @@ button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12p
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.5.4)</h3>
+ <h3>PRESET ALLENAMENTO (V6.6)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -247,7 +247,7 @@ button { padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 12p
 </div>
 
 <script>
-// LOGICA INVARIATA (Identica alla 6.4/6.5)
+// LOGICA V6.6 - AGGIUNTA FUNZIONE FUORI I SECONDI
 const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
 const DEFAULT_AUDIO = {
  gong: { type: 'square', freq: 200 },
@@ -256,7 +256,7 @@ const DEFAULT_AUDIO = {
 };
 
 let config = { 
- phases: [{type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}}],
+ phases: [{type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}, warning: {active: true}}],
  theme: JSON.parse(JSON.stringify(DEFAULT_THEME)),
  audio: JSON.parse(JSON.stringify(DEFAULT_AUDIO))
 };
@@ -284,6 +284,11 @@ timerWorker.onmessage = function() { if (state.isRunning) tick(); };
 function upgradeData() {
  if (!config.theme) config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME));
  if (!config.audio) config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO));
+ // Upgrade per V6.6: assicura che ogni fase di riposo abbia la proprietà warning
+ config.phases.forEach(p => {
+    if (p.type === 'rest' && !p.warning) p.warning = { active: false };
+    if (p.type === 'fight' && !p.random) p.random = { active: false, min: 5, max: 10 };
+ });
 }
 
 function applyThemeToCSS() {
@@ -323,10 +328,20 @@ function play(f, t, d) {
  o.start(now); o.stop(now + d + 0.01);
 }
 
+// Funzioni Audio
 const audio = { 
  gong:()=>play(config.audio.gong.freq, config.audio.gong.type, 1.0), 
  tick:()=>play(config.audio.tick.freq, config.audio.tick.type, 0.15), 
- sprint:()=>play(config.audio.sprint.freq, config.audio.sprint.type, 0.8) 
+ sprint:()=>play(config.audio.sprint.freq, config.audio.sprint.type, 0.8),
+ // Nuovo suono per V6.6: Triplo bip rapido (Fuori i Secondi)
+ warning:() => {
+    const freq = 1000; // Alta frequenza tipo orologio digitale
+    const type = 'sine';
+    const dur = 0.150;
+    setTimeout(() => play(freq, type, dur), 0);
+    setTimeout(() => play(freq, type, dur), 200);
+    setTimeout(() => play(freq, type, dur), 400);
+ }
 };
 
 function openLab() {
@@ -393,7 +408,7 @@ function renderPhases() {
  </div>
  <input type="number" class="phase-dur-input" value="${p.dur}" onchange="config.phases[${idx}].dur=parseInt(this.value);save();calculateTotals()">
  <input type="text" class="phase-label-input" placeholder="${p.type==='fight'?'COMBATTI!':'RIPOSO'}" value="${p.label || ''}" onchange="config.phases[${idx}].label=this.value;save()">
- <div class="type-toggle ${p.type==='fight'?'type-fight':'type-rest'}" onclick="config.phases[${idx}].type=(config.phases[${idx}].type==='fight'?'rest':'fight');renderPhases();save();calculateTotals()">
+ <div class="type-toggle ${p.type==='fight'?'type-fight':'type-rest'}" onclick="togglePhaseType(${idx})">
  ${p.type==='fight'?'LAVORO':'RIPOSO'}
  </div>
  <button onclick="clonePhase(${idx})" class="btn-phase-action">📄</button>
@@ -406,10 +421,26 @@ function renderPhases() {
  <input type="number" value="${p.random.min}" onchange="config.phases[${idx}].random.min=parseInt(this.value);save()"> - 
  <input type="number" value="${p.random.max}" onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s
  </div>
- </div>` : ''}`;
+ </div>` : `
+ <div class="phase-random-settings">
+ <button class="random-toggle-btn ${p.warning?.active?'random-active':''}" onclick="config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI (-10s) ${p.warning?.active?'ON':'OFF'}</button>
+ </div>`}
+ `;
  container.appendChild(div);
  });
  calculateTotals();
+}
+
+function togglePhaseType(idx) {
+    const p = config.phases[idx];
+    if (p.type === 'fight') {
+        p.type = 'rest';
+        p.warning = { active: false };
+    } else {
+        p.type = 'fight';
+        p.random = { active: false, min: 5, max: 10 };
+    }
+    renderPhases(); save(); calculateTotals();
 }
 
 function moveP(i, d) { [config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; save(); renderPhases(); }
@@ -536,14 +567,33 @@ function tick() {
  const now = Date.now();
  const elapsedSeconds = Math.floor((now - state.lastTickTimestamp) / 1000);
  if (elapsedSeconds <= 0) return;
+ 
  for (let i = 0; i < elapsedSeconds; i++) {
     state.totalTime++;
     state.lastTickTimestamp += 1000;
+    
     if(state.timeLeft > 1) {
         state.timeLeft--;
-        if(config.phases[state.phaseIndex].type === 'rest' && state.timeLeft <= 3) audio.tick();
-        if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { audio.sprint(); setNextR(); }
-    } else nextPh();
+        const currentP = config.phases[state.phaseIndex];
+        
+        // Logica Riposo
+        if(currentP.type === 'rest') {
+            // Fuori i secondi a -10s
+            if(state.timeLeft === 10 && currentP.warning?.active) {
+                audio.warning();
+            }
+            // Tick finale 3-2-1
+            if(state.timeLeft <= 3) audio.tick();
+        }
+        
+        // Logica Scatti Random
+        if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { 
+            audio.sprint(); 
+            setNextR(); 
+        }
+    } else {
+        nextPh();
+    }
  }
  updateUI();
 }
