@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="./manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.7</title>
+<title>BOXING TIMER V6.7.1</title>
 
 <style>
 :root { 
@@ -126,6 +126,7 @@ button { padding: 15px 20px; font-size: 1.1rem; border: none; border-radius: 12p
 .lab-row input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 5px; background: transparent; }
 .lab-row input[type="range"] { flex-grow: 1; margin: 0 10px; }
 .btn-reset-lab { width: 100%; background: #444; padding: 10px; border-radius: 6px; font-size: 0.8rem; color: white; border: none; }
+.btn-test-sound { background: var(--accent); color:white; border:none; border-radius:5px; padding:8px 12px; font-weight:bold; cursor:pointer; }
 .backup-tools { display: flex; gap: 10px; margin-top: 15px; }
 .btn-tool { font-size: 0.75rem; padding: 10px; background: #444; flex: 1; border-radius: 8px; color:white; border:none; }
 
@@ -164,7 +165,7 @@ button { padding: 15px 20px; font-size: 1.1rem; border: none; border-radius: 12p
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.7)</h3>
+ <h3>PRESET ALLENAMENTO (V6.7.1)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -205,11 +206,13 @@ button { padding: 15px 20px; font-size: 1.1rem; border: none; border-radius: 12p
  <div class="lab-group">
  <div class="lab-row">
  <span style="font-weight:bold; color:var(--accent)">VOLUME MASTER</span>
+ <button id="btn-loop-test" class="btn-test-sound" onclick="toggleLoopTest()">▶ LOOP TEST</button>
  </div>
  <div class="lab-row">
  <input type="range" id="master-vol" min="0" max="1" step="0.01" oninput="updateVolumeConfig()">
  <span id="val-vol" style="width:40px; text-align:right">70%</span>
  </div>
+ <p style="font-size:0.7rem; color:#888; margin:0">Usa il LOOP TEST per calibrare lo slide in tempo reale.</p>
  </div>
 
  <div class="lab-group">
@@ -251,7 +254,7 @@ button { padding: 15px 20px; font-size: 1.1rem; border: none; border-radius: 12p
  <input type="range" id="freq-sprint" min="100" max="1500" step="10" oninput="updateAudioConfig()">
  <span id="val-sprint" style="width:40px; text-align:right"></span>
  </div>
- <button class="btn-reset-lab" onclick="resetAudio()">↺ Ripristina Suoni Default</button>
+ <button class="btn-reset-lab" onclick="resetColors()">↺ Ripristina Suoni Default</button>
  </div>
  </div>
  <button onclick="closeLab()" style="background:#444; width:100%; padding:20px; font-size:1.1rem; border:none; border-radius:12px; color:white; font-weight:bold; margin-top:10px;">
@@ -261,7 +264,7 @@ button { padding: 15px 20px; font-size: 1.1rem; border: none; border-radius: 12p
 </div>
 
 <script>
-// LOGICA V6.7
+// LOGICA V6.7.1 - AUDIO ENGINE RECALIBRATED
 const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
 const DEFAULT_AUDIO = {
  gong: { type: 'square', freq: 200 },
@@ -277,7 +280,7 @@ let config = {
 };
 let presets = {};
 let state = { timeLeft: 0, totalTime: 0, currentRound: 1, phaseIndex: 0, isRunning: false, nextRandomTick: -1, lastLoadedPreset: null, lastTickTimestamp: 0 };
-let audioCtx, masterGain, compressor, wakeLock;
+let audioCtx, masterGain, compressor, wakeLock, loopOsc;
 
 const workerCode = `
   let timer = null;
@@ -316,19 +319,29 @@ function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null
 
 function ensureAudio() {
  if (!audioCtx) {
- audioCtx = new (window.AudioContext || window.webkitAudioContext)();
- compressor = audioCtx.createDynamicsCompressor();
- masterGain = audioCtx.createGain();
- updateMasterGain();
- compressor.connect(masterGain);
- masterGain.connect(audioCtx.destination);
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    compressor = audioCtx.createDynamicsCompressor();
+    // Limitatore per evitare distorsione eccessiva
+    compressor.threshold.setValueAtTime(-15, audioCtx.currentTime);
+    compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+    compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+    
+    masterGain = audioCtx.createGain();
+    updateMasterGain();
+    compressor.connect(masterGain);
+    masterGain.connect(audioCtx.destination);
  }
  if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
 function updateMasterGain() {
     if(masterGain && audioCtx) {
-        masterGain.gain.setTargetAtTime(config.volume * 6.0, audioCtx.currentTime, 0.02);
+        // CURVA ESPONENZIALE: Math.pow(vol, 2) rende lo slide naturale all'orecchio umano.
+        // Moltiplicatore 6.0 mantenuto per potenza V6.6 al 100%.
+        const gainVal = Math.pow(config.volume, 2) * 6.0;
+        masterGain.gain.setTargetAtTime(gainVal, audioCtx.currentTime, 0.02);
     }
 }
 
@@ -342,6 +355,26 @@ function play(f, t, d) {
  g.gain.setValueAtTime(0.001, now + d + 0.001); 
  o.connect(g); g.connect(compressor);
  o.start(now); o.stop(now + d + 0.01);
+}
+
+// LOOP TEST PER CALIBRAZIONE VOLUME
+function toggleLoopTest() {
+    ensureAudio();
+    const btn = document.getElementById('btn-loop-test');
+    if (loopOsc) {
+        loopOsc.stop();
+        loopOsc = null;
+        btn.textContent = "▶ LOOP TEST";
+        btn.style.background = "var(--accent)";
+    } else {
+        loopOsc = audioCtx.createOscillator();
+        loopOsc.type = 'sine';
+        loopOsc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        loopOsc.connect(compressor);
+        loopOsc.start();
+        btn.textContent = "■ STOP TEST";
+        btn.style.background = "#d32f2f";
+    }
 }
 
 const audio = { 
@@ -364,6 +397,7 @@ function openLab() {
 }
 
 function closeLab() {
+ if(loopOsc) toggleLoopTest(); // Ferma il test se esci
  document.getElementById('settings-lab').style.display = 'none';
  document.getElementById('settings-main').style.display = 'flex';
  document.getElementById('settings-panel').scrollTop = 0;
@@ -620,34 +654,24 @@ function nextPh() {
 
 function skipNext() {
     ensureAudio();
-    // Suona il gong solo se il timer sta correndo (V6.7 Rev 2)
     if (state.isRunning) audio.gong();
-    
     state.phaseIndex++;
     if(state.phaseIndex >= config.phases.length) {
         state.phaseIndex = 0;
         state.currentRound++;
     }
     state.timeLeft = config.phases[state.phaseIndex].dur;
-    
-    // Aggiorna sempre il label della fase
     document.getElementById("status-display").textContent = getPhaseLabel(config.phases[state.phaseIndex]);
-    
     setNextR(); updateTheme(); updateUI();
 }
 
 function skipPrev() {
     ensureAudio();
-    // Suona il gong solo se il timer sta correndo (V6.7 Rev 2)
     if (state.isRunning) audio.gong();
-    
     const currentPhaseDur = config.phases[state.phaseIndex].dur;
-    
-    // Se siamo oltre i 2 secondi, resetta la fase attuale
     if (state.timeLeft < currentPhaseDur - 2) {
         state.timeLeft = currentPhaseDur;
     } else {
-        // Altrimenti torna alla fase precedente
         state.phaseIndex--;
         if (state.phaseIndex < 0) {
             if (state.currentRound > 1) {
@@ -659,10 +683,7 @@ function skipPrev() {
         }
         state.timeLeft = config.phases[state.phaseIndex].dur;
     }
-    
-    // Aggiorna sempre il label della fase
     document.getElementById("status-display").textContent = getPhaseLabel(config.phases[state.phaseIndex]);
-    
     setNextR(); updateTheme(); updateUI();
 }
 
@@ -675,16 +696,12 @@ async function toggleTimer() {
     timerWorker.postMessage('stop'); 
     btn.textContent = "RIPRENDI"; 
  } else {
-    // Se il tempo rimasto è pari alla durata totale della fase (es. dopo uno skip o all'inizio)
-    // suoniamo il gong premendo Start/Riprendi
     if (state.timeLeft === config.phases[state.phaseIndex].dur) {
         audio.gong();
-        // Se eravamo su "PRONTO?", aggiorniamo il testo
         if(document.getElementById("status-display").textContent === "PRONTO?"){
             document.getElementById("status-display").textContent = getPhaseLabel(config.phases[state.phaseIndex]);
         }
     }
-
     state.isRunning = true; 
     await requestWakeLock(); 
     state.lastTickTimestamp = Date.now();
