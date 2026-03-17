@@ -1,49 +1,52 @@
-// /BoxingTimer-Beta/sw.js - v6.9.1
-const CACHE_NAME = 'boxing-timer-beta';
-const assets = [
-  '/BoxingTimer-Beta/',
+// /BoxingTimer-Beta/sw.js - v6.9.2
+
+const CACHE_NAME = 'boxing-timer-beta-v6.9.2';
+
+const ASSETS = [
+  './',
   './index.html',
-  './manifest.json',
-  './icon.png'
+  './icon.png',
+  './maskable_icon_x192.png',
+  './maskable_icon_x512.png',
+  './maskable_icon.png'
 ];
 
+// INSTALL
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(assets))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
+// ACTIVATE
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.map(key => {
-        if (key !== CACHE_NAME && !key.includes('stable')) {
-          return caches.delete(key);
-        }
-      })
-    ))
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      )
+    )
   );
-  // Qui è accettabile usare clients.claim() perché lo scope è ristretto
   self.clients.claim();
 });
 
+// FETCH
 self.addEventListener('fetch', e => {
-  try {
-    const url = new URL(e.request.url);
-    // Interveniamo solo per richieste dentro /BoxingTimer/new/
-    if (url.pathname.startsWith('/BoxingTimer-Beta/')) {
-      e.respondWith(
-        fetch(e.request).then(response => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, responseClone));
-          return response;
-        }).catch(() => caches.match(e.request))
-      );
-    }
-    // Altrimenti non interveniamo
-  } catch (err) {
-    // fallback: non interferire
+  const url = new URL(e.request.url);
+
+  // NON toccare il manifest
+  if (url.pathname.includes('manifest.json')) return;
+
+  if (url.pathname.startsWith('/BoxingTimer-Beta/')) {
+    e.respondWith(
+      caches.match(e.request).then(response => {
+        return response || fetch(e.request);
+      })
+    );
   }
 });
-

@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="./manifest.json?v=6.9.1">
+<link rel="manifest" href="./manifest.json?v=6.9.2">
 <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.9.1</title>
+<title>BOXING TIMER V6.9.2</title>
 
 <style>
 :root { 
@@ -168,7 +168,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.9.1)</h3>
+ <h3>PRESET ALLENAMENTO (V6.9.2)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -808,7 +808,7 @@ initTimer();
 
 if ('serviceWorker' in navigator) {
  window.addEventListener('load', () => {
- navigator.serviceWorker.register('./sw.js', { scope: './' })
+ navigator.serviceWorker.register('./sw.js?v=6.9.2', { scope: './' })
  .then(reg => {
  reg.addEventListener('updatefound', () => {
  const newWorker = reg.installing;
