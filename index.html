@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="./manifest.json?v=6.9">
+<link rel="manifest" href="./manifest.json?v=6.9.1">
 <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.9</title>
+<title>BOXING TIMER V6.9.1</title>
 
 <style>
 :root { 
@@ -168,7 +168,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.9)</h3>
+ <h3>PRESET ALLENAMENTO (V6.9.1)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -273,7 +273,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 </div>
 
 <script>
-// LOGICA V6.9 - SNAPSHOT & AUDIO SCHEDULING (FULL LOGIC RESTORED)
+// LOGICA V6.9.1 - SILENT SKIP FIX
 const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
 const DEFAULT_AUDIO = {
  gong: { type: 'square', freq: 200 },
@@ -705,7 +705,7 @@ function nextPh() {
 
 function skipNext() {
     ensureAudio();
-    audio.gong();
+    if (state.isRunning) audio.gong();
     state.phaseIndex++;
     if(state.phaseIndex >= state.sessionPhases.length) { state.phaseIndex = 0; state.currentRound++; }
     state.timeLeft = state.sessionPhases[state.phaseIndex].dur;
@@ -715,7 +715,7 @@ function skipNext() {
 
 function skipPrev() {
     ensureAudio();
-    audio.gong();
+    if (state.isRunning) audio.gong();
     const currentPhaseDur = state.sessionPhases[state.phaseIndex].dur;
     if (state.timeLeft < currentPhaseDur - 2) { state.timeLeft = currentPhaseDur; } 
     else {
@@ -732,7 +732,6 @@ function skipPrev() {
 
 async function toggleTimer() {
  ensureAudio();
- // WARM-UP FIX: Sveglia istantanea driver audio per il Redmi Pad SE
  if(!state.isRunning) play(10, 'sine', 0.01);
 
  const btn = document.getElementById("btn-toggle");
