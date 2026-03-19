@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="./manifest.json?v=6.9.4">
+<link rel="manifest" href="./manifest.json?v=6.9.5">
 <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.9.4</title>
+<title>BOXING TIMER V6.9.5</title>
 
 <style>
 :root { 
@@ -23,7 +23,7 @@ html { height: 100%; overflow: hidden; overscroll-behavior: none; }
 body {
     overscroll-behavior: none;
     height: 100%; height: 100dvh;
-    min-height: -webkit-fill-available; /* FIX 6.9.4 per barre browser */
+    min-height: -webkit-fill-available;
     width: 100%; margin: 0;
     background: var(--bg); color: white;
     font-family: system-ui, -apple-system, sans-serif;
@@ -37,6 +37,23 @@ body {
 
 body.fight-mode { background: var(--fight); }
 body.rest-mode { background: var(--rest); }
+
+/* --- AGGIORNAMENTO OVERLAY --- */
+#update-screen {
+    position: fixed; inset: 0; 
+    background: rgba(0,0,0,0.95); 
+    z-index: 10000; 
+    display: none; flex-direction: column; 
+    align-items: center; justify-content: center; 
+    text-align: center; padding: 30px;
+}
+#update-screen h2 { color: var(--accent); font-size: 2rem; margin-bottom: 10px; }
+#update-screen p { font-size: 1.1rem; opacity: 0.8; margin-bottom: 30px; }
+#btn-update-ok { 
+    background: var(--accent); color: white; border: none; 
+    padding: 20px 60px; border-radius: 15px; font-size: 1.5rem; 
+    font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+}
 
 /* --- HEADER --- */
 .app-header {
@@ -147,6 +164,13 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 
 <body>
 
+<!-- OVERLAY AGGIORNAMENTO 6.9.5 -->
+<div id="update-screen">
+    <h2>AGGIORNAMENTO COMPLETATO</h2>
+    <p>Una nuova versione è stata installata con successo.<br>Tocca OK per iniziare.</p>
+    <button id="btn-update-ok">OK</button>
+</div>
+
 <header class="app-header">
     <button id="fs-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
     <div id="total-display">SESSIONE: <span id="total-time">00:00</span></div>
@@ -169,7 +193,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.9.4)</h3>
+ <h3>PRESET ALLENAMENTO (V6.9.5)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -274,7 +298,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 </div>
 
 <script>
-// LOGICA V6.9.4 - CLEAN UPDATE FIX
+// LOGICA V6.9.5
 const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
 const DEFAULT_AUDIO = {
  gong: { type: 'square', freq: 200 },
@@ -354,7 +378,6 @@ function updateMasterGain() {
     }
 }
 
-// FIX 6.9.3: Rampa esponenziale per eliminare click audio
 function play(f, t, d, startTime = null) {
  if (!audioCtx) return;
  const now = (startTime !== null) ? startTime : audioCtx.currentTime;
@@ -362,7 +385,6 @@ function play(f, t, d, startTime = null) {
  const g = audioCtx.createGain();
  o.type = t; o.frequency.setValueAtTime(f, now);
  
- // Inizio e fine morbidi (10ms)
  g.gain.setValueAtTime(0.0001, now);
  g.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
  g.gain.setValueAtTime(1.0, now + d);
@@ -739,8 +761,6 @@ function skipPrev() {
 
 async function toggleTimer() {
  ensureAudio();
- // FIX 6.9.3: Rimosso play(10) per evitare pop audio al "Riprendi"
- 
  const btn = document.getElementById("btn-toggle");
  if(state.isRunning) { 
     state.isRunning = false; releaseWakeLock(); timerWorker.postMessage('stop'); btn.textContent = "RIPRENDI"; 
@@ -813,32 +833,42 @@ function resetTimer() { state.isRunning = false; releaseWakeLock(); initTimer();
 load(); 
 initTimer();
 
-// FIX 6.9.4: Nuova logica Service Worker per Update Pulito
+// LOGICA UPDATE BLOCCANTE V6.9.5
 if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js?v=6.9.5').then(reg => {
+    
+    // Funzione per mostrare l'overlay di aggiornamento completato
+    const showUpdateUI = (worker) => {
+      const updateScreen = document.getElementById('update-screen');
+      updateScreen.style.display = 'flex';
+      document.getElementById('btn-update-ok').onclick = () => {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      };
+    };
+
+    // 1. Controlla se c'è un aggiornamento in fase di installazione
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        // Quando i file sono stati scaricati tutti (installed)
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateUI(newWorker);
+        }
+      });
+    });
+
+    // 2. Controlla se c'era già un aggiornamento pronto in attesa
+    if (reg.waiting) {
+      showUpdateUI(reg.waiting);
+    }
+  });
+
+  // Quando l'utente preme OK, il nuovo worker prende il comando e noi ricarichiamo
   let refreshing = false;
-  // Forza il ricaricamento solo quando il nuovo worker ha effettivamente preso il controllo
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
     refreshing = true;
     window.location.reload();
-  });
-
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=6.9.4')
-    .then(reg => {
-       // Se c'è un worker in attesa, forziamo lo skipWaiting
-       if (reg.waiting) {
-         reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-       }
-       reg.addEventListener('updatefound', () => {
-         const newWorker = reg.installing;
-         newWorker.addEventListener('statechange', () => {
-           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-             newWorker.postMessage({ type: 'SKIP_WAITING' });
-           }
-         });
-       });
-    });
   });
 }
 </script>

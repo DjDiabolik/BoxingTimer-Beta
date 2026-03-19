@@ -1,5 +1,5 @@
-// /sw.js - v6.9.4
-const CACHE_NAME = 'boxing-timer-v6.9.4';
+// /sw.js - v6.9.5
+const CACHE_NAME = 'boxing-timer-v6.9.5';
 
 const ASSETS = [
   './',
@@ -10,15 +10,14 @@ const ASSETS = [
   './maskable_icon.png'
 ];
 
-// INSTALL
+// INSTALL: Scarica i file ma NON attivarti (aspetta l'utente)
 self.addEventListener('install', e => {
-  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
-// ACTIVATE
+// ACTIVATE: Pulisce le vecchie cache
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -34,18 +33,16 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ESCUCHA SKIP_WAITING
+// MESSAGGI: Riceve il comando SKIP_WAITING dall'overlay "OK"
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// FETCH (Offline support)
+// FETCH (Offline)
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
-  // Non toccare il manifest
   if (url.pathname.includes('manifest.json')) return;
 
   e.respondWith(
