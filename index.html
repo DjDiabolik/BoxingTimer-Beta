@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="./manifest.json?v=6.9.2">
+<link rel="manifest" href="./manifest.json?v=6.9.3">
 <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.9.2</title>
+<title>BOXING TIMER V6.9.3</title>
 
 <style>
 :root { 
@@ -168,7 +168,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.9.2)</h3>
+ <h3>PRESET ALLENAMENTO (V6.9.3)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -273,7 +273,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 </div>
 
 <script>
-// LOGICA V6.9.1 - SILENT SKIP FIX
+// LOGICA V6.9.3 - AUDIO POP FIX
 const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
 const DEFAULT_AUDIO = {
  gong: { type: 'square', freq: 200 },
@@ -353,16 +353,27 @@ function updateMasterGain() {
     }
 }
 
+// FIX: Aggiunta rampa di guadagno (gain ramp) per evitare il "click" (audio pop)
 function play(f, t, d, startTime = null) {
  if (!audioCtx) return;
  const now = (startTime !== null) ? startTime : audioCtx.currentTime;
  const o = audioCtx.createOscillator();
  const g = audioCtx.createGain();
- o.type = t; o.frequency.setValueAtTime(f, now);
- g.gain.setValueAtTime(1.0, now); g.gain.setValueAtTime(1.0, now + d);
- g.gain.setValueAtTime(0.001, now + d + 0.001); 
- o.connect(g); g.connect(compressor);
- o.start(now); o.stop(now + d + 0.01);
+ o.type = t; 
+ o.frequency.setValueAtTime(f, now);
+ 
+ // Inizio morbido
+ g.gain.setValueAtTime(0.0001, now);
+ g.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
+ 
+ // Fine morbida
+ g.gain.setValueAtTime(1.0, now + d);
+ g.gain.exponentialRampToValueAtTime(0.0001, now + d + 0.01);
+ 
+ o.connect(g); 
+ g.connect(compressor);
+ o.start(now); 
+ o.stop(now + d + 0.02);
 }
 
 function toggleLoopTest() {
@@ -732,8 +743,8 @@ function skipPrev() {
 
 async function toggleTimer() {
  ensureAudio();
- if(!state.isRunning) play(10, 'sine', 0.01);
-
+ // FIX: Rimossa la riga play(10) che causava il pop audio alla ripresa
+ 
  const btn = document.getElementById("btn-toggle");
  if(state.isRunning) { 
     state.isRunning = false; releaseWakeLock(); timerWorker.postMessage('stop'); btn.textContent = "RIPRENDI"; 
@@ -808,7 +819,7 @@ initTimer();
 
 if ('serviceWorker' in navigator) {
  window.addEventListener('load', () => {
- navigator.serviceWorker.register('./sw.js?v=6.9.2', { scope: './' })
+ navigator.serviceWorker.register('./sw.js?v=6.9.3', { scope: './' })
  .then(reg => {
  reg.addEventListener('updatefound', () => {
  const newWorker = reg.installing;
