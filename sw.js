@@ -1,6 +1,5 @@
-// /BoxingTimer-Beta/sw.js - v6.9.3
-
-const CACHE_NAME = 'boxing-timer-beta-v6.9.3';
+// /sw.js - v6.9.4
+const CACHE_NAME = 'boxing-timer-v6.9.4';
 
 const ASSETS = [
   './',
@@ -35,18 +34,23 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// FETCH
+// ESCUCHA SKIP_WAITING
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// FETCH (Offline support)
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // NON toccare il manifest
+  // Non toccare il manifest
   if (url.pathname.includes('manifest.json')) return;
 
-  if (url.pathname.startsWith('/BoxingTimer-Beta/')) {
-    e.respondWith(
-      caches.match(e.request).then(response => {
-        return response || fetch(e.request);
-      })
-    );
-  }
+  e.respondWith(
+    caches.match(e.request).then(response => {
+      return response || fetch(e.request);
+    })
+  );
 });
