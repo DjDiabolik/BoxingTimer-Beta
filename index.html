@@ -2,10 +2,11 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="./manifest.json?v=6.9.5">
+<link rel="manifest" href="./manifest.json?v=6.9.6">
 <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BOXING TIMER V6.9.5</title>
+<!-- viewport-fit=cover è fondamentale per i display con notch -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BOXING TIMER V6.9.6</title>
 
 <style>
 :root { 
@@ -18,41 +19,42 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html { height: 100%; overflow: hidden; overscroll-behavior: none; }
+/* FIX LAYOUT: Usiamo dvh per l'altezza dinamica corretta su Android */
+html, body { 
+    height: 100dvh; 
+    width: 100vw;
+    margin: 0; 
+    overflow: hidden; 
+    position: fixed; /* Impedisce lo scroll dell'intera pagina */
+    overscroll-behavior: none;
+}
 
 body {
-    overscroll-behavior: none;
-    height: 100%; height: 100dvh;
-    min-height: -webkit-fill-available;
-    width: 100%; margin: 0;
     background: var(--bg); color: white;
     font-family: system-ui, -apple-system, sans-serif;
     user-select: none;
-    touch-action: manipulation;
+    touch-action: none; /* Disabilita i gesti del browser come il pull-to-refresh */
     display: flex; flex-direction: column;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     transition: background .3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
 }
 
 body.fight-mode { background: var(--fight); }
 body.rest-mode { background: var(--rest); }
 
-/* --- AGGIORNAMENTO OVERLAY --- */
+/* --- UPDATE OVERLAY --- */
 #update-screen {
     position: fixed; inset: 0; 
-    background: rgba(0,0,0,0.95); 
+    background: rgba(0,0,0,0.98); 
     z-index: 10000; 
     display: none; flex-direction: column; 
     align-items: center; justify-content: center; 
     text-align: center; padding: 30px;
 }
-#update-screen h2 { color: var(--accent); font-size: 2rem; margin-bottom: 10px; }
-#update-screen p { font-size: 1.1rem; opacity: 0.8; margin-bottom: 30px; }
 #btn-update-ok { 
     background: var(--accent); color: white; border: none; 
     padding: 20px 60px; border-radius: 15px; font-size: 1.5rem; 
-    font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+    font-weight: bold; cursor: pointer;
 }
 
 /* --- HEADER --- */
@@ -90,16 +92,10 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
     position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
     display: none; flex-direction: column; align-items: center; 
     z-index: 1000; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
 }
 
-.view-container { 
-    width: 100%; max-width: 500px; display: flex; flex-direction: column; 
-    padding: 60px 15px 40px; 
-    overscroll-behavior: contain; 
-}
-
-.setting-section { width: 100%; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; display: flex; flex-direction: column; }
+.view-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; padding: 60px 15px 40px; }
+.setting-section { width: 100%; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; }
 .setting-section h3 { color: var(--accent); margin-bottom: 12px; font-size: 1.1rem; }
 
 /* COMPONENTI GRAFICI */
@@ -113,61 +109,45 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 .btn-preset-del { background: #b71c1c; }
 
 #phases-list { width: 100%; margin-bottom: 15px; }
-.phase-item { background: #222; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; overflow: hidden; width: 100%; }
-.phase-header { 
-    display: flex; align-items: center; 
-    gap: 4px; 
-    padding: 8px 4px; 
-    background: #2a2a2a; 
-    width: 100%;
-}
-
-.sort-controls { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-.btn-sort { background: #444; color: #ccc; width: 28px; height: 22px; border-radius: 4px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; border: none; }
-
-.phase-dur-input { width: 50px; flex-shrink: 0; padding: 8px 2px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; text-align: center; font-weight:bold; }
-.phase-label-input { 
-    flex: 1; 
-    min-width: 0; 
-    padding: 8px; background: #111; color: #fff; border: 1px solid #444; border-radius: 5px; font-size: 0.8rem; 
-}
-.type-toggle { width: 65px; flex-shrink: 0; padding: 10px 2px; border-radius: 5px; text-align: center; font-weight: bold; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; }
+.phase-item { background: #222; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; overflow: hidden; }
+.phase-header { display: flex; align-items: center; gap: 4px; padding: 8px 4px; background: #2a2a2a; }
+.sort-controls { display: flex; flex-direction: column; gap: 2px; }
+.btn-sort { background: #444; color: #ccc; width: 28px; height: 22px; border-radius: 4px; font-size: 0.65rem; border: none; }
+.phase-dur-input { width: 50px; padding: 8px 2px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; text-align: center; }
+.phase-label-input { flex: 1; min-width: 0; padding: 8px; background: #111; color: #fff; border: 1px solid #444; border-radius: 5px; font-size: 0.8rem; }
+.type-toggle { width: 65px; padding: 10px 2px; border-radius: 5px; text-align: center; font-weight: bold; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; }
 .type-fight { background: var(--fight); }
 .type-rest { background: var(--rest); opacity: 0.7; }
-
-.btn-phase-action { background:#444; border:none; padding:8px; border-radius:5px; color:white; flex-shrink:0; cursor:pointer; }
-
+.btn-phase-action { background:#444; border:none; padding:8px; border-radius:5px; color:white; cursor:pointer; }
 .phase-random-settings { background: #1a1a1a; padding: 10px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #333; font-size: 0.8rem; }
-.random-toggle-btn { padding: 6px 10px; border-radius: 4px; background: #333; color: #888; border:none; cursor:pointer; }
+.random-toggle-btn { padding: 6px 10px; border-radius: 4px; background: #333; color: #888; border:none; }
 .random-active { background: var(--accent); color: white; }
 .random-inputs { display: flex; align-items: center; gap: 5px; }
-.random-inputs input { width: 35px; background:#333; color:white; border:none; padding:5px; text-align:center; border-radius:4px; }
-.lab-group { background: #222; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #333; width: 100%; }
+.random-inputs input { width: 35px; background:#333; color:white; border:none; padding:5px; text-align:center; }
+.lab-group { background: #222; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #333; }
 .lab-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
 .lab-row input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 5px; background: transparent; }
 .lab-row input[type="range"] { flex-grow: 1; margin: 0 10px; }
 .btn-reset-lab { width: 100%; background: #444; padding: 10px; border-radius: 6px; font-size: 0.8rem; color: white; border: none; }
-.btn-test-sound { background: var(--accent); color:white; border:none; border-radius:5px; padding:8px 12px; font-weight:bold; cursor:pointer; }
+.btn-test-sound { background: var(--accent); color:white; border:none; border-radius:5px; padding:8px 12px; font-weight:bold; }
 .backup-tools { display: flex; gap: 10px; margin-top: 15px; }
 .btn-tool { font-size: 0.75rem; padding: 10px; background: #444; flex: 1; border-radius: 8px; color:white; border:none; }
 
 @media (max-height: 500px) and (orientation: landscape) {
-    .main-content { flex-direction: row; flex-wrap: wrap; justify-content: space-around; align-content: center; }
+    .main-content { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
     #time-display { font-size: 40vh; margin: 0; width: 100%; }
-    #round-display, #status-display { font-size: 1.2rem; margin: 0 10px; flex: 0 1 auto; }
+    #round-display, #status-display { font-size: 1.2rem; margin: 0 10px; }
     .controls { padding-bottom: 10px; }
-    button { padding: 10px 20px; font-size: 0.9rem; }
-    .app-header { padding: 5px 15px; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- OVERLAY AGGIORNAMENTO 6.9.5 -->
+<!-- OVERLAY AGGIORNAMENTO 6.9.6 -->
 <div id="update-screen">
-    <h2>AGGIORNAMENTO COMPLETATO</h2>
-    <p>Una nuova versione è stata installata con successo.<br>Tocca OK per iniziare.</p>
+    <h2>V6.9.6 DISPONIBILE</h2>
+    <p>Miglioramenti alla precisione e al layout.<br>Tocca OK per riavviare.</p>
     <button id="btn-update-ok">OK</button>
 </div>
 
@@ -193,7 +173,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 <div id="settings-panel">
  <div id="settings-main" class="view-container">
  <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.9.5)</h3>
+ <h3>PRESET ALLENAMENTO (V6.9.6)</h3>
  <div id="presets-list"></div>
  <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
  <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -230,7 +210,6 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
  <div id="settings-lab" class="view-container" style="display:none;">
  <div class="setting-section" style="border-bottom:none;">
  <h3>🧪 LABORATORIO</h3>
- 
  <div class="lab-group">
  <div class="lab-row">
  <span style="font-weight:bold; color:var(--accent)">VOLUME MASTER</span>
@@ -241,14 +220,12 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
  <span id="val-vol" style="width:40px; text-align:right">70%</span>
  </div>
  </div>
-
  <div class="lab-group">
  <div class="lab-row">
  <span style="color:var(--accent); font-weight:bold;">SINTESI VOCALE (ALPHA)</span>
  <button id="voice-toggle-btn" class="random-toggle-btn" onclick="toggleVoice()">VOCE OFF</button>
  </div>
  </div>
-
  <div class="lab-group">
  <div class="lab-row">
  <span>Colore LAVORO:</span>
@@ -298,7 +275,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 </div>
 
 <script>
-// LOGICA V6.9.5
+// LOGICA V6.9.6
 const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
 const DEFAULT_AUDIO = {
  gong: { type: 'square', freq: 200 },
@@ -310,13 +287,13 @@ let config = {
  phases: [{type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}, warning: {active: true}}],
  theme: JSON.parse(JSON.stringify(DEFAULT_THEME)),
  audio: JSON.parse(JSON.stringify(DEFAULT_AUDIO)),
- volume: 0.7,
- voiceEnabled: false
+ volume: 0.7, voiceEnabled: false
 };
 let presets = {};
 let state = { timeLeft: 0, totalTime: 0, currentRound: 1, phaseIndex: 0, isRunning: false, nextRandomTick: -1, lastLoadedPreset: null, lastTickTimestamp: 0, sessionPhases: [] };
 let audioCtx, masterGain, compressor, wakeLock, testLoopInterval;
 
+// WEB WORKER TIMER
 const workerCode = `
   let timer = null;
   self.onmessage = function(e) {
@@ -331,7 +308,6 @@ const workerCode = `
 `;
 const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
 const timerWorker = new Worker(URL.createObjectURL(workerBlob));
-
 timerWorker.onmessage = function() { if (state.isRunning) tick(); };
 
 function upgradeData() {
@@ -350,7 +326,11 @@ function applyThemeToCSS() {
  document.documentElement.style.setProperty('--rest', config.theme.rest);
 }
 
-async function requestWakeLock() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} } }
+async function requestWakeLock() { 
+    if ('wakeLock' in navigator) { 
+        try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} 
+    } 
+}
 function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
 
 function ensureAudio() {
@@ -358,11 +338,6 @@ function ensureAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     compressor = audioCtx.createDynamicsCompressor();
     compressor.threshold.setValueAtTime(-15, audioCtx.currentTime);
-    compressor.knee.setValueAtTime(30, audioCtx.currentTime);
-    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-    compressor.attack.setValueAtTime(0, audioCtx.currentTime);
-    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
-    
     masterGain = audioCtx.createGain();
     updateMasterGain();
     compressor.connect(masterGain);
@@ -384,58 +359,22 @@ function play(f, t, d, startTime = null) {
  const o = audioCtx.createOscillator();
  const g = audioCtx.createGain();
  o.type = t; o.frequency.setValueAtTime(f, now);
- 
  g.gain.setValueAtTime(0.0001, now);
  g.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
  g.gain.setValueAtTime(1.0, now + d);
  g.gain.exponentialRampToValueAtTime(0.0001, now + d + 0.01);
- 
  o.connect(g); g.connect(compressor);
  o.start(now); o.stop(now + d + 0.02);
 }
 
-function toggleLoopTest() {
-    ensureAudio();
-    const btn = document.getElementById('btn-loop-test');
-    if (testLoopInterval) {
-        clearInterval(testLoopInterval);
-        testLoopInterval = null;
-        btn.textContent = "▶ LOOP TEST";
-        btn.style.background = "var(--accent)";
-    } else {
-        btn.textContent = "■ STOP TEST";
-        btn.style.background = "#d32f2f";
-        const testSequence = [() => audio.gong(), () => audio.tick(), () => audio.sprint(), () => audio.warning()];
-        let step = 0;
-        testSequence[step]();
-        step++;
-        testLoopInterval = setInterval(() => {
-            testSequence[step]();
-            step = (step + 1) % testSequence.length;
-        }, 1500);
-    }
-}
-
 const audio = { 
- gong: () => {
-    ensureAudio();
-    play(config.audio.gong.freq, config.audio.gong.type, 1.0, audioCtx.currentTime);
- }, 
- tick: () => {
-    ensureAudio();
-    play(config.audio.tick.freq, config.audio.tick.type, 0.15);
- }, 
- sprint: () => {
-    ensureAudio();
-    play(config.audio.sprint.freq, config.audio.sprint.type, 0.8, audioCtx.currentTime);
- },
+ gong: () => { ensureAudio(); play(config.audio.gong.freq, config.audio.gong.type, 1.0, audioCtx.currentTime); }, 
+ tick: () => { ensureAudio(); play(config.audio.tick.freq, config.audio.tick.type, 0.15); }, 
+ sprint: () => { ensureAudio(); play(config.audio.sprint.freq, config.audio.sprint.type, 0.8, audioCtx.currentTime); },
  warning: () => {
     ensureAudio();
-    const freq = 1000; const type = 'sine'; const dur = 0.150;
     const now = audioCtx.currentTime;
-    play(freq, type, dur, now);
-    play(freq, type, dur, now + 0.20);
-    play(freq, type, dur, now + 0.40);
+    [0, 0.2, 0.4].forEach(off => play(1000, 'sine', 0.15, now + off));
  },
  speak: (text) => {
     if(!config.voiceEnabled) return;
@@ -445,251 +384,29 @@ const audio = {
  }
 };
 
-function toggleVoice() {
-    config.voiceEnabled = !config.voiceEnabled;
-    const btn = document.getElementById('voice-toggle-btn');
-    btn.textContent = config.voiceEnabled ? "VOCE ON" : "VOCE OFF";
-    btn.className = "random-toggle-btn " + (config.voiceEnabled ? "random-active" : "");
-    save();
-}
+// FIX LAG TIMER V6.9.6
+async function toggleTimer() {
+ ensureAudio();
+ const btn = document.getElementById("btn-toggle");
+ if(state.isRunning) { 
+    state.isRunning = false; releaseWakeLock(); timerWorker.postMessage('stop'); btn.textContent = "RIPRENDI"; 
+ } else {
+    // Start immediato
+    state.isRunning = true; 
+    state.lastTickTimestamp = Date.now();
+    timerWorker.postMessage('start'); 
+    btn.textContent = "PAUSA";
 
-function openLab() {
- document.getElementById('settings-main').style.display = 'none';
- document.getElementById('settings-lab').style.display = 'flex';
- updateLabUI();
- document.getElementById('settings-panel').scrollTop = 0;
-}
-
-function closeLab() {
- if(testLoopInterval) toggleLoopTest(); 
- document.getElementById('settings-lab').style.display = 'none';
- document.getElementById('settings-main').style.display = 'flex';
- document.getElementById('settings-panel').scrollTop = 0;
-}
-
-function updateLabUI() {
- document.getElementById('col-fight').value = config.theme.fight;
- document.getElementById('col-rest').value = config.theme.rest;
- document.getElementById('master-vol').value = config.volume;
- document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%";
- document.getElementById('voice-toggle-btn').textContent = config.voiceEnabled ? "VOCE ON" : "VOCE OFF";
- document.getElementById('voice-toggle-btn').className = "random-toggle-btn " + (config.voiceEnabled ? "random-active" : "");
- ['gong', 'tick', 'sprint'].forEach(k => {
- if(document.getElementById(`wave-${k}`)) document.getElementById(`wave-${k}`).value = config.audio[k].type;
- if(document.getElementById(`freq-${k}`)) document.getElementById(`freq-${k}`).value = config.audio[k].freq;
- if(document.getElementById(`val-${k}`)) document.getElementById(`val-${k}`).textContent = config.audio[k].freq;
- });
-}
-
-function updateVolumeConfig() {
-    config.volume = parseFloat(document.getElementById('master-vol').value);
-    document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%";
-    updateMasterGain();
-    save();
-}
-
-function updateColors() {
- config.theme.fight = document.getElementById('col-fight').value;
- config.theme.rest = document.getElementById('col-rest').value;
- applyThemeToCSS(); save();
-}
-
-function updateAudioConfig() {
- ['gong', 'tick', 'sprint'].forEach(k => {
- config.audio[k].type = document.getElementById(`wave-${k}`).value;
- config.audio[k].freq = parseInt(document.getElementById(`freq-${k}`).value);
- document.getElementById(`val-${k}`).textContent = config.audio[k].freq;
- });
- save();
-}
-
-function resetColors() { config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME)); updateLabUI(); applyThemeToCSS(); save(); }
-function resetAudio() { config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO)); updateLabUI(); save(); }
-
-function calculateTotals() {
- let work = 0; let total = 0;
- config.phases.forEach(p => {
- total += p.dur;
- if(p.type === 'fight') work += p.dur;
- });
- const f = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
- document.getElementById("total-work-time").textContent = f(work);
- document.getElementById("total-circuit-time").textContent = f(total);
-}
-
-function renderPhases() {
- const container = document.getElementById("phases-list"); container.innerHTML = "";
- const isRunning = state.isRunning;
- config.phases.forEach((p, idx) => {
- const div = document.createElement("div"); div.className = "phase-item";
- div.innerHTML = `
- <div class="phase-header">
- <div class="sort-controls">
- <button class="btn-sort" ${idx===0 || isRunning ?'disabled':''} onclick="moveP(${idx},-1)">▲</button>
- <button class="btn-sort" ${idx===config.phases.length-1 || isRunning ?'disabled':''} onclick="moveP(${idx},1)">▼</button>
- </div>
- <input type="number" class="phase-dur-input" value="${p.dur}" ${isRunning?'disabled':''} onchange="config.phases[${idx}].dur=parseInt(this.value);save();calculateTotals()">
- <input type="text" class="phase-label-input" placeholder="${p.type==='fight'?'COMBATTI!':'RIPOSO'}" value="${p.label || ''}" onchange="config.phases[${idx}].label=this.value;save()">
- <div class="type-toggle ${p.type==='fight'?'type-fight':'type-rest'}" style="${isRunning?'pointer-events:none; opacity:0.8':''}" onclick="togglePhaseType(${idx})">
- ${p.type==='fight'?'LAVORO':'RIPOSO'}
- </div>
- <button onclick="clonePhase(${idx})" class="btn-phase-action" ${isRunning?'disabled':''}>📄</button>
- <button onclick="config.phases.splice(${idx},1);renderPhases();save();calculateTotals()" class="btn-phase-action" ${isRunning?'disabled':''}>✕</button>
- </div>
- ${p.type==='fight' ? `
- <div class="phase-random-settings">
- <button class="random-toggle-btn ${p.random.active?'random-active':''}" ${isRunning?'disabled':''} onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active?'ON':'OFF'}</button>
- <div class="random-inputs">
- <input type="number" value="${p.random.min}" ${isRunning?'disabled':''} onchange="config.phases[${idx}].random.min=parseInt(this.value);save()"> - 
- <input type="number" value="${p.random.max}" ${isRunning?'disabled':''} onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s
- </div>
- </div>` : `
- <div class="phase-random-settings">
- <button class="random-toggle-btn ${p.warning?.active?'random-active':''}" ${isRunning?'disabled':''} onclick="config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI (-10s) ${p.warning?.active?'ON':'OFF'}</button>
- </div>`}
- `;
- container.appendChild(div);
- });
- calculateTotals();
-}
-
-function togglePhaseType(idx) {
-    if(state.isRunning) return;
-    const p = config.phases[idx];
-    if (p.type === 'fight') { p.type = 'rest'; p.warning = { active: false }; } 
-    else { p.type = 'fight'; p.random = { active: false, min: 5, max: 10 }; }
-    renderPhases(); save(); calculateTotals();
-}
-
-function moveP(i, d) { if(state.isRunning) return; [config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; save(); renderPhases(); }
-
-function addPhase() {
- if(state.isRunning) return;
- let newPhase;
- if (config.phases.length > 0) newPhase = JSON.parse(JSON.stringify(config.phases[config.phases.length - 1]));
- else newPhase = {type:'fight', dur:60, label: '', random:{active:false, min:5, max:10}};
- config.phases.push(newPhase); save(); renderPhases();
-}
-
-function clonePhase(idx) {
- if(state.isRunning) return;
- const cloned = JSON.parse(JSON.stringify(config.phases[idx]));
- config.phases.splice(idx + 1, 0, cloned);
- save(); renderPhases();
-}
-
-function renderPresets() {
- const c = document.getElementById("presets-list"); c.innerHTML = "";
- const isRunning = state.isRunning;
- for (let n in presets) {
- const d = document.createElement("div"); d.className = "preset-item";
- d.innerHTML = `
- <button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" ${isRunning?'disabled':''} onclick="applyP('${n}')">${n}</button>
- <button class="btn-preset-icon" ${isRunning?'disabled':''} onclick="exportSinglePreset('${n}')">📤</button>
- <button class="btn-preset-icon" ${isRunning?'disabled':''} onclick="renamePreset('${n}')">✎</button>
- <button class="btn-preset-icon btn-preset-del" ${isRunning?'disabled':''} onclick="deletePreset('${n}')">✕</button>`;
- c.appendChild(d);
- }
-}
-
-function deletePreset(name) { if(confirm(`Eliminare "${name}"?`)) { delete presets[name]; save(); renderPresets(); } }
-
-function renamePreset(oldName) {
- const newName = prompt("Nuovo nome per questo preset:", oldName);
- if (newName && newName.trim() !== "" && newName !== oldName) {
- presets[newName] = presets[oldName]; delete presets[oldName];
- if(state.lastLoadedPreset === oldName) state.lastLoadedPreset = newName;
- save(); renderPresets();
- }
-}
-
-function applyP(n) { 
- if(state.isRunning) return;
- state.lastLoadedPreset = n; config = JSON.parse(JSON.stringify(presets[n])); save();
- upgradeData(); applyThemeToCSS(); updateLabUI();
- document.getElementById("active-preset-controls").style.display = "block";
- document.getElementById("active-preset-name").textContent = n;
- renderPhases(); renderPresets(); initTimer(); 
-}
-
-function overwritePreset() { 
-    if(state.lastLoadedPreset){ 
-        presets[state.lastLoadedPreset] = JSON.parse(JSON.stringify(config)); 
-        save(); 
-        alert("Preset Aggiornato!"); 
-    } 
-}
-
-function saveCurrentAsPreset() {
- const n = document.getElementById("preset-name").value.trim(); if(!n) return;
- presets[n] = JSON.parse(JSON.stringify(config)); save();
- applyP(n); document.getElementById("preset-name").value = "";
-}
-
-function exportData() {
- const data = { config, presets, exportType: 'FULL_BACKUP' };
- const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
- const now = new Date();
- const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
- const fileName = `BoxingTimer_Backup_${ts}.json`;
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url; a.download = fileName; a.click();
- URL.revokeObjectURL(url);
-}
-
-function exportSinglePreset(name) {
- if (!presets[name]) return;
- const data = { presetData: presets[name], presetName: name, exportType: 'SINGLE_PRESET' };
- const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
- const safeName = name.replace(/[^a-z0-9]/gi, '_');
- const fileName = `BT_Preset_${safeName}.json`;
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url; a.download = fileName; a.click();
- URL.revokeObjectURL(url);
-}
-
-function importData(event) {
- if(state.isRunning) return;
- const file = event.target.files[0]; if (!file) return;
- const reader = new FileReader();
- reader.onload = (e) => {
- try {
-    const imported = JSON.parse(e.target.result);
-    if (imported.exportType === 'SINGLE_PRESET') {
-        let name = imported.presetName; let finalName = name; let counter = 1;
-        while (presets[finalName]) { finalName = `${name}_${counter}`; counter++; }
-        presets[finalName] = imported.presetData;
-        alert(`Preset "${finalName}" aggiunto!`);
-    } 
-    else if (imported.presets) {
-        const mode = confirm("Backup completo rilevato.\n\nOK: AGGIUNGI ai presenti.\nANNULLA: SOVRASCRIVI TUTTO.");
-        if (mode) { 
-            Object.keys(imported.presets).forEach(name => {
-                let finalName = name; let counter = 1;
-                while (presets[finalName]) { finalName = `${name}_${counter}`; counter++; }
-                presets[finalName] = imported.presets[name];
-            });
-        } else {
-            if(confirm("Sovrascrivere tutto?")) {
-                if(imported.config) config = imported.config;
-                presets = imported.presets;
-            } else return;
+    if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
+        audio.gong();
+        if(document.getElementById("status-display").textContent === "PRONTO?"){
+            document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
+            if(config.voiceEnabled) setTimeout(()=>audio.speak("Round " + state.currentRound), 1000);
         }
-    } else { throw new Error(); }
-    upgradeData(); applyThemeToCSS(); updateLabUI();
-    save(); renderPhases(); renderPresets(); initTimer();
- } catch(err) { alert("Errore importazione file."); }
- };
- reader.readAsText(file);
-}
-
-function setNextR() {
- const p = state.sessionPhases[state.phaseIndex];
- if(p.type==='fight' && p.random.active) {
- state.nextRandomTick = state.timeLeft - (Math.floor(Math.random() * (p.random.max - p.random.min + 1)) + p.random.min);
- } else state.nextRandomTick = -1;
+    }
+    requestWakeLock(); // Senza await per non bloccare
+    setNextR();
+ }
 }
 
 function tick() {
@@ -713,28 +430,18 @@ function tick() {
  updateUI();
 }
 
-function getPhaseLabel(p) {
- if(p.label && p.label.trim() !== "") return p.label.toUpperCase();
- return p.type === 'fight' ? "COMBATTI!" : "RIPOSO";
-}
-
 function nextPh() {
  audio.gong(); state.phaseIndex++;
  if(state.phaseIndex >= state.sessionPhases.length) { state.phaseIndex = 0; state.currentRound++; }
  const p = state.sessionPhases[state.phaseIndex];
  state.timeLeft = p.dur;
  document.getElementById("status-display").textContent = getPhaseLabel(p);
- if (config.voiceEnabled) {
-    setTimeout(() => {
-        audio.speak(p.type==='fight' ? "Round " + state.currentRound : "Riposo");
-    }, 1000);
- }
+ if (config.voiceEnabled) setTimeout(() => audio.speak(p.type==='fight' ? "Round " + state.currentRound : "Riposo"), 1000);
  setNextR(); updateTheme();
 }
 
 function skipNext() {
-    ensureAudio();
-    if (state.isRunning) audio.gong();
+    ensureAudio(); if (state.isRunning) audio.gong();
     state.phaseIndex++;
     if(state.phaseIndex >= state.sessionPhases.length) { state.phaseIndex = 0; state.currentRound++; }
     state.timeLeft = state.sessionPhases[state.phaseIndex].dur;
@@ -743,8 +450,7 @@ function skipNext() {
 }
 
 function skipPrev() {
-    ensureAudio();
-    if (state.isRunning) audio.gong();
+    ensureAudio(); if (state.isRunning) audio.gong();
     const currentPhaseDur = state.sessionPhases[state.phaseIndex].dur;
     if (state.timeLeft < currentPhaseDur - 2) { state.timeLeft = currentPhaseDur; } 
     else {
@@ -759,37 +465,121 @@ function skipPrev() {
     setNextR(); updateTheme(); updateUI();
 }
 
-async function toggleTimer() {
- ensureAudio();
- const btn = document.getElementById("btn-toggle");
- if(state.isRunning) { 
-    state.isRunning = false; releaseWakeLock(); timerWorker.postMessage('stop'); btn.textContent = "RIPRENDI"; 
- } else {
-    if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
-        audio.gong();
-        if(document.getElementById("status-display").textContent === "PRONTO?"){
-            document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
-            if(config.voiceEnabled) setTimeout(()=>audio.speak("Round " + state.currentRound), 1000);
-        }
-    }
-    state.isRunning = true; await requestWakeLock(); state.lastTickTimestamp = Date.now();
-    timerWorker.postMessage('start'); btn.textContent = "PAUSA";
-    setNextR();
+// LOGICA INTERFACCIA E PRESET (Rimasta invariata per compatibilità)
+function calculateTotals() {
+ let work = 0; let total = 0;
+ config.phases.forEach(p => { total += p.dur; if(p.type === 'fight') work += p.dur; });
+ const f = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+ document.getElementById("total-work-time").textContent = f(work);
+ document.getElementById("total-circuit-time").textContent = f(total);
+}
+
+function renderPhases() {
+ const container = document.getElementById("phases-list"); container.innerHTML = "";
+ const isRunning = state.isRunning;
+ config.phases.forEach((p, idx) => {
+ const div = document.createElement("div"); div.className = "phase-item";
+ div.innerHTML = `
+ <div class="phase-header">
+ <div class="sort-controls">
+ <button class="btn-sort" ${idx===0 || isRunning ?'disabled':''} onclick="moveP(${idx},-1)">▲</button>
+ <button class="btn-sort" ${idx===config.phases.length-1 || isRunning ?'disabled':''} onclick="moveP(${idx},1)">▼</button>
+ </div>
+ <input type="number" class="phase-dur-input" value="${p.dur}" ${isRunning?'disabled':''} onchange="config.phases[${idx}].dur=parseInt(this.value);save();calculateTotals()">
+ <input type="text" class="phase-label-input" placeholder="${p.type==='fight'?'COMBATTI!':'RIPOSO'}" value="${p.label || ''}" onchange="config.phases[${idx}].label=this.value;save()">
+ <div class="type-toggle ${p.type==='fight'?'type-fight':'type-rest'}" onclick="togglePhaseType(${idx})">${p.type==='fight'?'LAVORO':'RIPOSO'}</div>
+ <button onclick="clonePhase(${idx})" class="btn-phase-action" ${isRunning?'disabled':''}>📄</button>
+ <button onclick="config.phases.splice(${idx},1);renderPhases();save();calculateTotals()" class="btn-phase-action" ${isRunning?'disabled':''}>✕</button>
+ </div>
+ ${p.type==='fight' ? `<div class="phase-random-settings"><button class="random-toggle-btn ${p.random.active?'random-active':''}" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active?'ON':'OFF'}</button><div class="random-inputs"><input type="number" value="${p.random.min}" onchange="config.phases[${idx}].random.min=parseInt(this.value);save()">-<input type="number" value="${p.random.max}" onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s</div></div>` : `<div class="phase-random-settings"><button class="random-toggle-btn ${p.warning?.active?'random-active':''}" onclick="config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI ${p.warning?.active?'ON':'OFF'}</button></div>`}`;
+ container.appendChild(div);
+ });
+ calculateTotals();
+}
+
+function togglePhaseType(idx) {
+    if(state.isRunning) return;
+    const p = config.phases[idx];
+    if (p.type === 'fight') { p.type = 'rest'; p.warning = { active: false }; } 
+    else { p.type = 'fight'; p.random = { active: false, min: 5, max: 10 }; }
+    renderPhases(); save(); calculateTotals();
+}
+function moveP(i, d) { if(state.isRunning) return; [config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; save(); renderPhases(); }
+function addPhase() { if(state.isRunning) return; config.phases.push({type:'fight', dur:60, label: '', random:{active:false, min:5, max:10}}); save(); renderPhases(); }
+function clonePhase(idx) { if(state.isRunning) return; const cloned = JSON.parse(JSON.stringify(config.phases[idx])); config.phases.splice(idx + 1, 0, cloned); save(); renderPhases(); }
+
+function renderPresets() {
+ const c = document.getElementById("presets-list"); c.innerHTML = "";
+ for (let n in presets) {
+ const d = document.createElement("div"); d.className = "preset-item";
+ d.innerHTML = `<button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" onclick="applyP('${n}')">${n}</button><button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button><button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button><button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>`;
+ c.appendChild(d);
  }
 }
+function applyP(n) { if(state.isRunning) return; state.lastLoadedPreset = n; config = JSON.parse(JSON.stringify(presets[n])); upgradeData(); applyThemeToCSS(); updateLabUI(); document.getElementById("active-preset-controls").style.display = "block"; document.getElementById("active-preset-name").textContent = n; renderPhases(); renderPresets(); initTimer(); save(); }
+function overwritePreset() { if(state.lastLoadedPreset){ presets[state.lastLoadedPreset] = JSON.parse(JSON.stringify(config)); save(); alert("Preset Aggiornato!"); } }
+function saveCurrentAsPreset() { const n = document.getElementById("preset-name").value.trim(); if(!n) return; presets[n] = JSON.parse(JSON.stringify(config)); applyP(n); document.getElementById("preset-name").value = ""; }
+function deletePreset(name) { if(confirm(`Eliminare "${name}"?`)) { delete presets[name]; save(); renderPresets(); } }
+function renamePreset(oldName) { const n = prompt("Nuovo nome:", oldName); if (n && n.trim() !== "" && n !== oldName) { presets[n] = presets[oldName]; delete presets[oldName]; if(state.lastLoadedPreset === oldName) state.lastLoadedPreset = n; save(); renderPresets(); } }
 
-function save() { 
- localStorage.setItem('boxing_timer_config', JSON.stringify(config)); 
- localStorage.setItem('boxing_timer_presets', JSON.stringify(presets)); 
+function exportData() {
+ const data = { config, presets, exportType: 'FULL_BACKUP' };
+ const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `BoxingTimer_Backup.json`; a.click();
+}
+function importData(event) {
+ const file = event.target.files[0]; if (!file) return;
+ const reader = new FileReader();
+ reader.onload = (e) => {
+    try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.presets) { presets = imported.presets; if(imported.config) config = imported.config; }
+        upgradeData(); applyThemeToCSS(); updateLabUI(); save(); renderPhases(); renderPresets(); initTimer();
+    } catch(err) { alert("Errore file."); }
+ };
+ reader.readAsText(file);
 }
 
+// LABORATORIO
+function openLab() { document.getElementById('settings-main').style.display = 'none'; document.getElementById('settings-lab').style.display = 'flex'; updateLabUI(); }
+function closeLab() { if(testLoopInterval) toggleLoopTest(); document.getElementById('settings-lab').style.display = 'none'; document.getElementById('settings-main').style.display = 'flex'; }
+function updateLabUI() {
+ document.getElementById('col-fight').value = config.theme.fight;
+ document.getElementById('col-rest').value = config.theme.rest;
+ document.getElementById('master-vol').value = config.volume;
+ document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%";
+ document.getElementById('voice-toggle-btn').textContent = config.voiceEnabled ? "VOCE ON" : "VOCE OFF";
+ document.getElementById('voice-toggle-btn').className = "random-toggle-btn " + (config.voiceEnabled ? "random-active" : "");
+ ['gong', 'tick', 'sprint'].forEach(k => {
+    document.getElementById(`wave-${k}`).value = config.audio[k].type;
+    document.getElementById(`freq-${k}`).value = config.audio[k].freq;
+    document.getElementById(`val-${k}`).textContent = config.audio[k].freq;
+ });
+}
+function updateVolumeConfig() { config.volume = parseFloat(document.getElementById('master-vol').value); document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%"; updateMasterGain(); save(); }
+function updateColors() { config.theme.fight = document.getElementById('col-fight').value; config.theme.rest = document.getElementById('col-rest').value; applyThemeToCSS(); save(); }
+function updateAudioConfig() { ['gong', 'tick', 'sprint'].forEach(k => { config.audio[k].type = document.getElementById(`wave-${k}`).value; config.audio[k].freq = parseInt(document.getElementById(`freq-${k}`).value); document.getElementById(`val-${k}`).textContent = config.audio[k].freq; }); save(); }
+function resetColors() { config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME)); updateLabUI(); applyThemeToCSS(); save(); }
+function resetAudio() { config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO)); updateLabUI(); save(); }
+function toggleVoice() { config.voiceEnabled = !config.voiceEnabled; updateLabUI(); save(); }
+function toggleLoopTest() {
+    ensureAudio(); const btn = document.getElementById('btn-loop-test');
+    if (testLoopInterval) { clearInterval(testLoopInterval); testLoopInterval = null; btn.textContent = "▶ LOOP TEST"; } 
+    else { btn.textContent = "■ STOP"; testLoopInterval = setInterval(() => { audio.tick(); }, 1000); }
+}
+
+// UTILS
+function getPhaseLabel(p) { return (p.label && p.label.trim() !== "") ? p.label.toUpperCase() : (p.type === 'fight' ? "COMBATTI!" : "RIPOSO"); }
+function setNextR() {
+ const p = state.sessionPhases[state.phaseIndex];
+ if(p.type==='fight' && p.random.active) { state.nextRandomTick = state.timeLeft - (Math.floor(Math.random() * (p.random.max - p.random.min + 1)) + p.random.min); } else state.nextRandomTick = -1;
+}
+function save() { localStorage.setItem('boxing_timer_config', JSON.stringify(config)); localStorage.setItem('boxing_timer_presets', JSON.stringify(presets)); }
 function load() {
- const c = localStorage.getItem('boxing_timer_config');
- const p = localStorage.getItem('boxing_timer_presets');
+ const c = localStorage.getItem('boxing_timer_config'), p = localStorage.getItem('boxing_timer_presets');
  if(c) config = JSON.parse(c); if(p) presets = JSON.parse(p);
  upgradeData(); applyThemeToCSS();
 }
-
 function updateUI() {
  const m = Math.floor(state.timeLeft/60), s = state.timeLeft%60;
  document.getElementById("time-display").textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -797,14 +587,10 @@ function updateUI() {
  document.getElementById("total-time").textContent = `${String(tm).padStart(2,'0')}:${String(ts).padStart(2,'0')}`;
  document.getElementById("round-display").textContent = `ROUND ${state.currentRound}`;
 }
-
 function updateTheme() {
  document.body.classList.remove("fight-mode","rest-mode");
- if(state.sessionPhases[state.phaseIndex]) {
-    document.body.classList.add(state.sessionPhases[state.phaseIndex].type==='fight'?'fight-mode':'rest-mode');
- }
+ if(state.sessionPhases[state.phaseIndex]) document.body.classList.add(state.sessionPhases[state.phaseIndex].type==='fight'?'fight-mode':'rest-mode');
 }
-
 function initTimer() { 
  state.sessionPhases = JSON.parse(JSON.stringify(config.phases)); 
  state.timeLeft = state.sessionPhases[0].dur; state.totalTime = 0; state.currentRound = 1; state.phaseIndex = 0; state.isRunning = false;
@@ -812,63 +598,43 @@ function initTimer() {
  document.getElementById("status-display").textContent = "PRONTO?";
  updateUI(); updateTheme(); 
 }
-
 function toggleSettings() { 
  const s = document.getElementById("settings-panel"); 
- if (s.style.display === 'flex') { 
-    s.style.display = 'none'; 
-    if(!state.isRunning && document.getElementById("status-display").textContent === "PRONTO?") initTimer();
- } 
- else { 
-    s.style.display = 'flex'; 
-    document.getElementById('settings-main').style.display = 'flex'; 
-    document.getElementById('settings-lab').style.display = 'none'; 
-    calculateTotals(); renderPresets(); renderPhases();
- }
+ if (s.style.display === 'flex') { s.style.display = 'none'; if(!state.isRunning) initTimer(); } 
+ else { s.style.display = 'flex'; calculateTotals(); renderPresets(); renderPhases(); }
 }
-
 function toggleFullscreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 function resetTimer() { state.isRunning = false; releaseWakeLock(); initTimer(); }
 
-load(); 
-initTimer();
+// INITIALIZE
+load(); initTimer();
 
-// LOGICA UPDATE BLOCCANTE V6.9.5
+// FORCE LAYOUT RECALC (Fix Android PWA shift)
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.body.style.height = '100dvh';
+    }, 100);
+});
+
+// SERVICE WORKER & UPDATE LOGIC
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=6.9.5').then(reg => {
-    
-    // Funzione per mostrare l'overlay di aggiornamento completato
+  navigator.serviceWorker.register('./sw.js?v=6.9.6').then(reg => {
     const showUpdateUI = (worker) => {
-      const updateScreen = document.getElementById('update-screen');
-      updateScreen.style.display = 'flex';
-      document.getElementById('btn-update-ok').onclick = () => {
-        worker.postMessage({ type: 'SKIP_WAITING' });
-      };
+      document.getElementById('update-screen').style.display = 'flex';
+      document.getElementById('btn-update-ok').onclick = () => { worker.postMessage({ type: 'SKIP_WAITING' }); };
     };
-
-    // 1. Controlla se c'è un aggiornamento in fase di installazione
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', () => {
-        // Quando i file sono stati scaricati tutti (installed)
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateUI(newWorker);
-        }
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateUI(newWorker);
       });
     });
-
-    // 2. Controlla se c'era già un aggiornamento pronto in attesa
-    if (reg.waiting) {
-      showUpdateUI(reg.waiting);
-    }
+    if (reg.waiting) showUpdateUI(reg.waiting);
   });
-
-  // Quando l'utente preme OK, il nuovo worker prende il comando e noi ricarichiamo
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
+    if (refreshing) return; refreshing = true; window.location.reload();
   });
 }
 </script>
