@@ -1,642 +1,1300 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<link rel="manifest" href="./manifest.json?v=6.9.6">
-<link rel="icon" type="image/png" href="./maskable_icon_x192.png">
-<!-- viewport-fit=cover è fondamentale per i display con notch -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOXING TIMER V6.9.6</title>
+    <meta charset="UTF-8">
+    <link rel="manifest" href="./manifest.json?v=6.9.7">
+    <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BOXING TIMER V6.9.7</title>
 
-<style>
-:root { 
-    --bg:#121212; 
-    --fight:#2e7d32; 
-    --rest:#d32f2f; 
-    --accent:#2196F3; 
-    --panel:#1e1e1e; 
-}
+    <style>
+        :root { 
+            --bg: #121212; 
+            --fight: #2e7d32; 
+            --rest: #d32f2f; 
+            --accent: #2196F3; 
+            --panel: #1e1e1e; 
+        }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+        }
 
-/* FIX LAYOUT: Usiamo dvh per l'altezza dinamica corretta su Android */
-html, body { 
-    height: 100dvh; 
-    width: 100vw;
-    margin: 0; 
-    overflow: hidden; 
-    position: fixed; /* Impedisce lo scroll dell'intera pagina */
-    overscroll-behavior: none;
-}
+        html, body { 
+            height: 100dvh; 
+            width: 100vw; 
+            margin: 0; 
+            overflow: hidden; 
+            position: fixed; 
+            overscroll-behavior: none; 
+        }
 
-body {
-    background: var(--bg); color: white;
-    font-family: system-ui, -apple-system, sans-serif;
-    user-select: none;
-    touch-action: none; /* Disabilita i gesti del browser come il pull-to-refresh */
-    display: flex; flex-direction: column;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    transition: background .3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        body {
+            background: var(--bg); 
+            color: white; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            user-select: none; 
+            touch-action: none; 
+            display: flex; 
+            flex-direction: column; 
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); 
+            transition: background .3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
 
-body.fight-mode { background: var(--fight); }
-body.rest-mode { background: var(--rest); }
+        body.fight-mode { background: var(--fight); }
+        body.rest-mode { background: var(--rest); }
 
-/* --- UPDATE OVERLAY --- */
-#update-screen {
-    position: fixed; inset: 0; 
-    background: rgba(0,0,0,0.98); 
-    z-index: 10000; 
-    display: none; flex-direction: column; 
-    align-items: center; justify-content: center; 
-    text-align: center; padding: 30px;
-}
-#btn-update-ok { 
-    background: var(--accent); color: white; border: none; 
-    padding: 20px 60px; border-radius: 15px; font-size: 1.5rem; 
-    font-weight: bold; cursor: pointer;
-}
+        /* Update Overlay */
+        #update-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.98); 
+            z-index: 10000; 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            padding: 30px; 
+        }
 
-/* --- HEADER --- */
-.app-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 15px; width: 100%; z-index: 30; flex-shrink: 0;
-}
+        #btn-update-ok { 
+            background: var(--accent); 
+            color: white; 
+            border: none; 
+            padding: 20px 60px; 
+            border-radius: 15px; 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
 
-#fs-btn { font-size: 0.75rem; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; border: none; color: white; }
-#total-display { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-align: center; flex-grow: 1; }
-#settings-btn { font-size: 1.5rem; background: none; border: none; color: white; cursor: pointer; padding: 5px; }
+        /* Header */
+        .app-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px 15px; 
+            width: 100%; 
+            z-index: 30; 
+            flex-shrink: 0; 
+        }
 
-/* --- MAIN --- */
-.main-content {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 10px; min-height: 0;
-}
+        #fs-btn { 
+            font-size: 0.75rem; 
+            padding: 8px 12px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 8px; 
+            border: none; 
+            color: white; 
+        }
 
-#round-display { font-size: clamp(1.5rem, 5vh, 3rem); font-weight: 800; margin-bottom: 5px; }
-#status-display { font-size: clamp(1rem, 3vh, 1.8rem); letter-spacing: 2px; text-transform: uppercase; opacity: 0.9; }
-#time-display { 
-    font-size: clamp(5rem, 35vmin, 15rem); font-weight: 900; 
-    font-variant-numeric: tabular-nums; line-height: 1; margin: 10px 0;
-}
+        #total-display { 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            opacity: 0.9; 
+            text-align: center; 
+            flex-grow: 1; 
+        }
 
-.controls { display: flex; gap: 10px; justify-content: center; align-items: center; padding-bottom: 30px; width: 100%; flex-shrink: 0; padding-inline: 10px; }
-button { padding: 15px 20px; font-size: 1.1rem; border: none; border-radius: 12px; color: white; font-weight: bold; background: rgba(255,255,255,.15); backdrop-filter: blur(5px); cursor: pointer; }
-button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        #settings-btn { 
+            font-size: 1.5rem; 
+            background: none; 
+            border: none; 
+            color: white; 
+            cursor: pointer; 
+            padding: 5px; 
+        }
 
-#btn-toggle { background: var(--accent); min-width: 140px; font-size: 1.4rem; flex-grow: 1; max-width: 200px; }
-.btn-skip { font-size: 1.4rem; padding: 15px 18px; background: rgba(255,255,255,0.1); }
+        /* Main Content */
+        .main-content { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            padding: 10px; 
+            min-height: 0; 
+        }
 
-/* --- SETTINGS --- */
-#settings-panel { 
-    position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
-    display: none; flex-direction: column; align-items: center; 
-    z-index: 1000; overflow-y: auto; -webkit-overflow-scrolling: touch;
-}
+        #round-display { 
+            font-size: clamp(1.5rem, 5vh, 3rem); 
+            font-weight: 800; 
+            margin-bottom: 5px; 
+        }
 
-.view-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; padding: 60px 15px 40px; }
-.setting-section { width: 100%; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-.setting-section h3 { color: var(--accent); margin-bottom: 12px; font-size: 1.1rem; }
+        #status-display { 
+            font-size: clamp(1rem, 3vh, 1.8rem); 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+            opacity: 0.9; 
+        }
 
-/* COMPONENTI GRAFICI */
-.realtime-stats { background: #222; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; border: 1px solid #333; }
-.realtime-stats div { display: flex; justify-content: space-between; margin-bottom: 4px; }
-.stat-val { font-weight: bold; color: var(--accent); }
-.preset-item { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
-.btn-preset-load { flex-grow: 1; padding: 12px; background: #333; text-align: left; border-radius: 8px; font-size: 0.9rem; border:none; color:white; }
-.btn-preset-load.active { border: 2px solid var(--accent); }
-.btn-preset-icon { background: #444; padding: 12px; border-radius: 8px; width: 44px; display:flex; justify-content:center; align-items:center; cursor:pointer; border:none; color:white; }
-.btn-preset-del { background: #b71c1c; }
+        #time-display { 
+            font-size: clamp(5rem, 35vmin, 15rem); 
+            font-weight: 900; 
+            font-variant-numeric: tabular-nums; 
+            line-height: 1; 
+            margin: 10px 0; 
+        }
 
-#phases-list { width: 100%; margin-bottom: 15px; }
-.phase-item { background: #222; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; overflow: hidden; }
-.phase-header { display: flex; align-items: center; gap: 4px; padding: 8px 4px; background: #2a2a2a; }
-.sort-controls { display: flex; flex-direction: column; gap: 2px; }
-.btn-sort { background: #444; color: #ccc; width: 28px; height: 22px; border-radius: 4px; font-size: 0.65rem; border: none; }
-.phase-dur-input { width: 50px; padding: 8px 2px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; text-align: center; }
-.phase-label-input { flex: 1; min-width: 0; padding: 8px; background: #111; color: #fff; border: 1px solid #444; border-radius: 5px; font-size: 0.8rem; }
-.type-toggle { width: 65px; padding: 10px 2px; border-radius: 5px; text-align: center; font-weight: bold; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; }
-.type-fight { background: var(--fight); }
-.type-rest { background: var(--rest); opacity: 0.7; }
-.btn-phase-action { background:#444; border:none; padding:8px; border-radius:5px; color:white; cursor:pointer; }
-.phase-random-settings { background: #1a1a1a; padding: 10px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #333; font-size: 0.8rem; }
-.random-toggle-btn { padding: 6px 10px; border-radius: 4px; background: #333; color: #888; border:none; }
-.random-active { background: var(--accent); color: white; }
-.random-inputs { display: flex; align-items: center; gap: 5px; }
-.random-inputs input { width: 35px; background:#333; color:white; border:none; padding:5px; text-align:center; }
-.lab-group { background: #222; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #333; }
-.lab-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
-.lab-row input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 5px; background: transparent; }
-.lab-row input[type="range"] { flex-grow: 1; margin: 0 10px; }
-.btn-reset-lab { width: 100%; background: #444; padding: 10px; border-radius: 6px; font-size: 0.8rem; color: white; border: none; }
-.btn-test-sound { background: var(--accent); color:white; border:none; border-radius:5px; padding:8px 12px; font-weight:bold; }
-.backup-tools { display: flex; gap: 10px; margin-top: 15px; }
-.btn-tool { font-size: 0.75rem; padding: 10px; background: #444; flex: 1; border-radius: 8px; color:white; border:none; }
+        /* Controls */
+        .controls { 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            align-items: center; 
+            padding-bottom: 30px; 
+            width: 100%; 
+            flex-shrink: 0; 
+            padding-inline: 10px; 
+        }
 
-@media (max-height: 500px) and (orientation: landscape) {
-    .main-content { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
-    #time-display { font-size: 40vh; margin: 0; width: 100%; }
-    #round-display, #status-display { font-size: 1.2rem; margin: 0 10px; }
-    .controls { padding-bottom: 10px; }
-}
-</style>
+        button { 
+            padding: 15px 20px; 
+            font-size: 1.1rem; 
+            border: none; 
+            border-radius: 12px; 
+            color: white; 
+            font-weight: bold; 
+            background: rgba(255,255,255,.15); 
+            backdrop-filter: blur(5px); 
+            cursor: pointer; 
+        }
+
+        button:disabled { 
+            opacity: 0.3; 
+            cursor: not-allowed; 
+            filter: grayscale(1); 
+        }
+
+        #btn-toggle { 
+            background: var(--accent); 
+            min-width: 140px; 
+            font-size: 1.4rem; 
+            flex-grow: 1; 
+            max-width: 200px; 
+        }
+
+        .btn-skip { 
+            font-size: 1.4rem; 
+            padding: 15px 18px; 
+            background: rgba(255,255,255,0.1); 
+        }
+
+        /* Settings Panel */
+        #settings-panel { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.98); 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            z-index: 1000; 
+            overflow-y: auto; 
+        }
+
+        .view-container { 
+            width: 100%; 
+            max-width: 500px; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 60px 15px 40px; 
+        }
+
+        .setting-section { 
+            width: 100%; 
+            margin-bottom: 25px; 
+            border-bottom: 1px solid #333; 
+            padding-bottom: 15px; 
+        }
+
+        .setting-section h3 { 
+            color: var(--accent); 
+            margin-bottom: 12px; 
+            font-size: 1.1rem; 
+        }
+
+        .realtime-stats { 
+            background: #222; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            font-size: 0.85rem; 
+            border: 1px solid #333; 
+        }
+
+        .realtime-stats div { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 4px; 
+        }
+
+        .stat-val { 
+            font-weight: bold; 
+            color: var(--accent); 
+        }
+
+        .preset-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            margin-bottom: 8px; 
+        }
+
+        .btn-preset-load { 
+            flex-grow: 1; 
+            padding: 12px; 
+            background: #333; 
+            text-align: left; 
+            border-radius: 8px; 
+            font-size: 0.9rem; 
+            border:none; 
+            color:white; 
+        }
+
+        .btn-preset-load.active { 
+            border: 2px solid var(--accent); 
+        }
+
+        .btn-preset-icon { 
+            background: #444; 
+            padding: 12px; 
+            border-radius: 8px; 
+            width: 44px; 
+            display:flex; 
+            justify-content:center; 
+            align-items:center; 
+            cursor:pointer; 
+            border:none; 
+            color:white; 
+        }
+
+        .btn-preset-del { background: #b71c1c; }
+
+        #phases-list { width: 100%; margin-bottom: 15px; }
+
+        .phase-item { 
+            background: #222; 
+            margin-bottom: 10px; 
+            border-radius: 10px; 
+            border: 1px solid #333; 
+            overflow: hidden; 
+        }
+
+        .phase-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+            padding: 8px 4px; 
+            background: #2a2a2a; 
+        }
+
+        .sort-controls { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+        }
+
+        .btn-sort { 
+            background: #444; 
+            color: #ccc; 
+            width: 28px; 
+            height: 22px; 
+            border-radius: 4px; 
+            font-size: 0.65rem; 
+            border: none; 
+        }
+
+        .phase-dur-input { 
+            width: 50px; 
+            padding: 8px 2px; 
+            background: #111; 
+            color: white; 
+            border: 1px solid #444; 
+            border-radius: 5px; 
+            text-align: center; 
+        }
+
+        .phase-label-input { 
+            flex: 1; 
+            min-width: 0; 
+            padding: 8px; 
+            background: #111; 
+            color: #fff; 
+            border: 1px solid #444; 
+            border-radius: 5px; 
+            font-size: 0.8rem; 
+        }
+
+        .type-toggle { 
+            width: 65px; 
+            padding: 10px 2px; 
+            border-radius: 5px; 
+            text-align: center; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 0.6rem; 
+            text-transform: uppercase; 
+        }
+
+        .type-fight { background: var(--fight); }
+        .type-rest { background: var(--rest); opacity: 0.7; }
+
+        .btn-phase-action { 
+            background:#444; 
+            border:none; 
+            padding:8px; 
+            border-radius:5px; 
+            color:white; 
+            cursor:pointer; 
+        }
+
+        .phase-random-settings { 
+            background: #1a1a1a; 
+            padding: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-top: 1px solid #333; 
+            font-size: 0.8rem; 
+        }
+
+        .random-toggle-btn { 
+            padding: 6px 10px; 
+            border-radius: 4px; 
+            background: #333; 
+            color: #888; 
+            border:none; 
+        }
+
+        .random-active { 
+            background: var(--accent); 
+            color: white; 
+        }
+
+        .random-inputs { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+        }
+
+        .random-inputs input { 
+            width: 35px; 
+            background:#333; 
+            color:white; 
+            border:none; 
+            padding:5px; 
+            text-align:center; 
+        }
+
+        .lab-group { 
+            background: #222; 
+            border-radius: 8px; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            border: 1px solid #333; 
+        }
+
+        .lab-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 8px; 
+            font-size: 0.9rem; 
+        }
+
+        .lab-row input[type="color"] { 
+            width: 40px; 
+            height: 40px; 
+            border: none; 
+            border-radius: 5px; 
+            background: transparent; 
+        }
+
+        .lab-row input[type="range"] { 
+            flex-grow: 1; 
+            margin: 0 10px; 
+        }
+
+        .btn-reset-lab { 
+            width: 100%; 
+            background: #444; 
+            padding: 10px; 
+            border-radius: 6px; 
+            font-size: 0.8rem; 
+            color: white; 
+            border: none; 
+        }
+
+        .btn-test-sound { 
+            background: var(--accent); 
+            color:white; 
+            border:none; 
+            border-radius:5px; 
+            padding:8px 12px; 
+            font-weight:bold; 
+        }
+
+        .backup-tools { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 15px; 
+        }
+
+        .btn-tool { 
+            font-size: 0.75rem; 
+            padding: 10px; 
+            background: #444; 
+            flex: 1; 
+            border-radius: 8px; 
+            color:white; 
+            border:none; 
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .main-content { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
+            #time-display { font-size: 40vh; margin: 0; width: 100%; }
+            #round-display, #status-display { font-size: 1.2rem; margin: 0 10px; }
+            .controls { padding-bottom: 10px; }
+        }
+    </style>
 </head>
 
 <body>
 
-<!-- OVERLAY AGGIORNAMENTO 6.9.6 -->
-<div id="update-screen">
-    <h2>V6.9.6 DISPONIBILE</h2>
-    <p>Miglioramenti alla precisione e al layout.<br>Tocca OK per riavviare.</p>
-    <button id="btn-update-ok">OK</button>
-</div>
+    <div id="update-screen">
+        <h2>V6.9.7 DISPONIBILE</h2>
+        <p>Miglioramenti alla precisione e alla gestione preset.<br>Tocca OK per riavviare.</p>
+        <button id="btn-update-ok">OK</button>
+    </div>
 
-<header class="app-header">
-    <button id="fs-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
-    <div id="total-display">SESSIONE: <span id="total-time">00:00</span></div>
-    <button id="settings-btn" onclick="toggleSettings()">⚙️</button>
-</header>
+    <header class="app-header">
+        <button id="fs-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+        <div id="total-display">SESSIONE: <span id="total-time">00:00</span></div>
+        <button id="settings-btn" onclick="toggleSettings()">⚙️</button>
+    </header>
 
-<main class="main-content">
-    <div id="round-display">ROUND 1</div>
-    <div id="status-display">PRONTO?</div>
-    <div id="time-display">00:00</div>
-</main>
+    <main class="main-content">
+        <div id="round-display">ROUND 1</div>
+        <div id="status-display">PRONTO?</div>
+        <div id="time-display">00:00</div>
+    </main>
 
-<div class="controls">
- <button class="btn-skip" onclick="skipPrev()">⏮</button>
- <button id="btn-toggle" onclick="toggleTimer()">START</button>
- <button class="btn-skip" onclick="skipNext()">⏭</button>
- <button onclick="resetTimer()">RESET</button>
-</div>
+    <div class="controls">
+        <button class="btn-skip" onclick="skipPrev()">⏮</button>
+        <button id="btn-toggle" onclick="toggleTimer()">START</button>
+        <button class="btn-skip" onclick="skipNext()">⏭</button>
+        <button onclick="resetTimer()">RESET</button>
+    </div>
 
-<div id="settings-panel">
- <div id="settings-main" class="view-container">
- <div class="setting-section">
- <h3>PRESET ALLENAMENTO (V6.9.6)</h3>
- <div id="presets-list"></div>
- <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
- <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
- <button id="btn-overwrite" onclick="overwritePreset()" style="width:100%; background:var(--accent); padding:10px; border:none; border-radius:8px; color:white; font-weight:bold">AGGIORNA PRESET</button>
- </div>
- <div style="display:flex; gap:10px">
- <input type="text" id="preset-name" placeholder="Nuovo nome..." style="flex-grow:1; padding:12px; border-radius:8px; background:#222; color:white; border:none">
- <button id="btn-save-new" onclick="saveCurrentAsPreset()" style="background:#444; color:white; border:none; border-radius:8px; padding:0 15px">SALVA NUOVO</button>
- </div>
- <div class="backup-tools">
- <button id="btn-backup" class="btn-tool" onclick="exportData()">⬇ BACKUP</button>
- <button id="btn-import" class="btn-tool" onclick="document.getElementById('import-file').click()">⬆ IMPORTA</button>
- <input type="file" id="import-file" style="display:none" onchange="importData(event)">
- </div>
- </div>
+    <div id="settings-panel">
+        <div id="settings-main" class="view-container">
+            
+            <div id="section-presets" class="setting-section">
+                <h3>PRESET ALLENAMENTO (V6.9.7)</h3>
+                <div id="presets-list"></div>
+                <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
+                    <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
+                    <button id="btn-overwrite" onclick="overwritePreset()" style="width:100%; background:var(--accent); padding:10px; border:none; border-radius:8px; color:white; font-weight:bold">AGGIORNA PRESET</button>
+                </div>
+                <div style="display:flex; gap:10px">
+                    <input type="text" id="preset-name" placeholder="Nuovo nome..." style="flex-grow:1; padding:12px; border-radius:8px; background:#222; color:white; border:none">
+                    <button id="btn-save-new" onclick="saveCurrentAsPreset()" style="background:#444; color:white; border:none; border-radius:8px; padding:0 15px">SALVA</button>
+                </div>
+                <div class="backup-tools">
+                    <button id="btn-backup" class="btn-tool" onclick="exportData()">⬇ BACKUP</button>
+                    <button id="btn-import" class="btn-tool" onclick="document.getElementById('import-file').click()">⬆ IMPORTA</button>
+                    <input type="file" id="import-file" style="display:none" onchange="importData(event)">
+                </div>
+            </div>
 
- <div class="setting-section">
- <h3>STRUTTURA</h3>
- <div class="realtime-stats">
- <div>TEMPO LAVORO: <span id="total-work-time" class="stat-val">00:00</span></div>
- <div>TEMPO CIRCUITO: <span id="total-circuit-time" class="stat-val">00:00</span></div>
- </div>
- <div id="phases-list"></div>
- <button id="btn-add-phase" onclick="addPhase()" style="width:100%; background:#444; padding:15px; border:none; border-radius:12px; color:white; font-weight:bold">+ AGGIUNGI FASE</button>
- </div>
+            <div id="section-structure" class="setting-section">
+                <h3>STRUTTURA</h3>
+                <div class="realtime-stats">
+                    <div>TEMPO LAVORO: <span id="total-work-time" class="stat-val">00:00</span></div>
+                    <div>TEMPO CIRCUITO: <span id="total-circuit-time" class="stat-val">00:00</span></div>
+                </div>
+                <div id="phases-list"></div>
+                <button id="btn-add-phase" onclick="addPhase()" style="width:100%; background:#444; padding:15px; border:none; border-radius:12px; color:white; font-weight:bold">+ AGGIUNGI FASE</button>
+            </div>
 
- <button onclick="openLab()" style="background:transparent; border:2px solid var(--accent); width:100%; padding:15px; font-size:1rem; border-radius:12px; color:var(--accent); font-weight:bold; margin-bottom:15px;">
- 🧪 LABORATORIO (Volume e Suoni)
- </button>
+            <div id="running-lock-msg" style="display:none; padding:20px; background:rgba(255,193,7,0.1); color:#ffc107; border-radius:12px; margin-bottom:15px; text-align:center; font-size:0.9rem; border:1px solid #ffc107">
+                Timer in corso. Ferma e resetta per rendere effettive le modifiche alla struttura o ai preset.
+            </div>
 
- <button onclick="toggleSettings()" style="background:var(--accent); width:100%; padding:20px; font-size:1.2rem; border:none; border-radius:12px; color:white; font-weight:bold">CHIUDI E APPLICA</button>
- </div>
+            <button onclick="openLab()" style="background:transparent; border:2px solid var(--accent); width:100%; padding:15px; font-size:1rem; border-radius:12px; color:var(--accent); font-weight:bold; margin-bottom:15px;">
+                🧪 LABORATORIO (Volume e Suoni)
+            </button>
 
- <div id="settings-lab" class="view-container" style="display:none;">
- <div class="setting-section" style="border-bottom:none;">
- <h3>🧪 LABORATORIO</h3>
- <div class="lab-group">
- <div class="lab-row">
- <span style="font-weight:bold; color:var(--accent)">VOLUME MASTER</span>
- <button id="btn-loop-test" class="btn-test-sound" onclick="toggleLoopTest()">▶ LOOP TEST</button>
- </div>
- <div class="lab-row">
- <input type="range" id="master-vol" min="0" max="1" step="0.01" oninput="updateVolumeConfig()">
- <span id="val-vol" style="width:40px; text-align:right">70%</span>
- </div>
- </div>
- <div class="lab-group">
- <div class="lab-row">
- <span style="color:var(--accent); font-weight:bold;">SINTESI VOCALE (ALPHA)</span>
- <button id="voice-toggle-btn" class="random-toggle-btn" onclick="toggleVoice()">VOCE OFF</button>
- </div>
- </div>
- <div class="lab-group">
- <div class="lab-row">
- <span>Colore LAVORO:</span>
- <input type="color" id="col-fight" onchange="updateColors()">
- </div>
- <div class="lab-row">
- <span>Colore RIPOSO:</span>
- <input type="color" id="col-rest" onchange="updateColors()">
- </div>
- <button class="btn-reset-lab" onclick="resetColors()">↺ Ripristina Colori Default</button>
- </div>
- <div class="lab-group">
- <div class="lab-row">
- <span style="color:var(--accent); font-weight:bold;">GONG</span>
- <button class="btn-test-sound" onclick="audio.gong(); ensureAudio();">▶ TEST</button>
- </div>
- <div class="lab-row">
- <select id="wave-gong" onchange="updateAudioConfig()"><option value="square">Square</option><option value="sine">Sine</option><option value="sawtooth">Sawtooth</option><option value="triangle">Triangle</option></select>
- <input type="range" id="freq-gong" min="100" max="1500" step="10" oninput="updateAudioConfig()">
- <span id="val-gong" style="width:40px; text-align:right"></span>
- </div>
- <div class="lab-row" style="margin-top:15px">
- <span style="color:var(--accent); font-weight:bold;">TICK</span>
- <button class="btn-test-sound" onclick="audio.tick(); ensureAudio();">▶ TEST</button>
- </div>
- <div class="lab-row">
- <select id="wave-tick" onchange="updateAudioConfig()"><option value="square">Square</option><option value="sine">Sine</option><option value="sawtooth">Sawtooth</option><option value="triangle">Triangle</option></select>
- <input type="range" id="freq-tick" min="100" max="1500" step="10" oninput="updateAudioConfig()">
- <span id="val-tick" style="width:40px; text-align:right"></span>
- </div>
- <div class="lab-row" style="margin-top:15px">
- <span style="color:var(--accent); font-weight:bold;">SCATTO</span>
- <button class="btn-test-sound" onclick="audio.sprint(); ensureAudio();">▶ TEST</button>
- </div>
- <div class="lab-row">
- <select id="wave-sprint" onchange="updateAudioConfig()"><option value="square">Square</option><option value="sine">Sine</option><option value="sawtooth">Sawtooth</option><option value="triangle">Triangle</option></select>
- <input type="range" id="freq-sprint" min="100" max="1500" step="10" oninput="updateAudioConfig()">
- <span id="val-sprint" style="width:40px; text-align:right"></span>
- </div>
- <button class="btn-reset-lab" onclick="resetAudio()">↺ Ripristina Suoni Default</button>
- </div>
- </div>
- <button onclick="closeLab()" style="background:#444; width:100%; padding:20px; font-size:1.1rem; border:none; border-radius:12px; color:white; font-weight:bold; margin-top:10px;">
- ⬅ TORNA ALLE IMPOSTAZIONI
- </button>
- </div>
-</div>
+            <button onclick="toggleSettings()" style="background:var(--accent); width:100%; padding:20px; font-size:1.2rem; border:none; border-radius:12px; color:white; font-weight:bold">CHIUDI E APPLICA</button>
+        </div>
+
+        <div id="settings-lab" class="view-container" style="display:none;">
+            <div class="setting-section" style="border-bottom:none;">
+                <h3>🧪 LABORATORIO</h3>
+                <div class="lab-group">
+                    <div class="lab-row">
+                        <span style="font-weight:bold; color:var(--accent)">VOLUME MASTER</span>
+                        <button id="btn-loop-test" class="btn-test-sound" onclick="toggleLoopTest()">▶ LOOP TEST</button>
+                    </div>
+                    <div class="lab-row">
+                        <input type="range" id="master-vol" min="0" max="1" step="0.01" oninput="updateVolumeConfig()">
+                        <span id="val-vol" style="width:40px; text-align:right">70%</span>
+                    </div>
+                </div>
+                <div class="lab-group">
+                    <div class="lab-row">
+                        <span style="color:var(--accent); font-weight:bold;">SINTESI VOCALE (ALPHA)</span>
+                        <button id="voice-toggle-btn" class="random-toggle-btn" onclick="toggleVoice()">VOCE OFF</button>
+                    </div>
+                </div>
+                <div class="lab-group">
+                    <div class="lab-row">
+                        <span>Colore LAVORO:</span>
+                        <input type="color" id="col-fight" onchange="updateColors()">
+                    </div>
+                    <div class="lab-row">
+                        <span>Colore RIPOSO:</span>
+                        <input type="color" id="col-rest" onchange="updateColors()">
+                    </div>
+                    <button class="btn-reset-lab" onclick="resetColors()">↺ Ripristina Colori Default</button>
+                </div>
+                <div class="lab-group">
+                    <div class="lab-row">
+                        <span style="color:var(--accent); font-weight:bold;">GONG</span>
+                        <button class="btn-test-sound" onclick="audio.gong(); ensureAudio();">▶ TEST</button>
+                    </div>
+                    <div class="lab-row">
+                        <select id="wave-gong" onchange="updateAudioConfig()">
+                            <option value="square">Square</option>
+                            <option value="sine">Sine</option>
+                            <option value="sawtooth">Sawtooth</option>
+                            <option value="triangle">Triangle</option>
+                        </select>
+                        <input type="range" id="freq-gong" min="100" max="1500" step="10" oninput="updateAudioConfig()">
+                        <span id="val-gong" style="width:40px; text-align:right"></span>
+                    </div>
+                    <div class="lab-row" style="margin-top:15px">
+                        <span style="color:var(--accent); font-weight:bold;">TICK</span>
+                        <button class="btn-test-sound" onclick="audio.tick(); ensureAudio();">▶ TEST</button>
+                    </div>
+                    <div class="lab-row">
+                        <select id="wave-tick" onchange="updateAudioConfig()">
+                            <option value="square">Square</option>
+                            <option value="sine">Sine</option>
+                            <option value="sawtooth">Sawtooth</option>
+                            <option value="triangle">Triangle</option>
+                        </select>
+                        <input type="range" id="freq-tick" min="100" max="1500" step="10" oninput="updateAudioConfig()">
+                        <span id="val-tick" style="width:40px; text-align:right"></span>
+                    </div>
+                    <div class="lab-row" style="margin-top:15px">
+                        <span style="color:var(--accent); font-weight:bold;">SCATTO</span>
+                        <button class="btn-test-sound" onclick="audio.sprint(); ensureAudio();">▶ TEST</button>
+                    </div>
+                    <div class="lab-row">
+                        <select id="wave-sprint" onchange="updateAudioConfig()">
+                            <option value="square">Square</option>
+                            <option value="sine">Sine</option>
+                            <option value="sawtooth">Sawtooth</option>
+                            <option value="triangle">Triangle</option>
+                        </select>
+                        <input type="range" id="freq-sprint" min="100" max="1500" step="10" oninput="updateAudioConfig()">
+                        <span id="val-sprint" style="width:40px; text-align:right"></span>
+                    </div>
+                    <button class="btn-reset-lab" onclick="resetAudio()">↺ Ripristina Suoni Default</button>
+                </div>
+            </div>
+            <button onclick="closeLab()" style="background:#444; width:100%; padding:20px; font-size:1.1rem; border:none; border-radius:12px; color:white; font-weight:bold; margin-top:10px;">
+                ⬅ TORNA ALLE IMPOSTAZIONI
+            </button>
+        </div>
+    </div>
 
 <script>
-// LOGICA V6.9.6
-const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
-const DEFAULT_AUDIO = {
- gong: { type: 'square', freq: 200 },
- tick: { type: 'square', freq: 800 },
- sprint: { type: 'square', freq: 600 }
-};
-
-let config = { 
- phases: [{type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}, warning: {active: true}}],
- theme: JSON.parse(JSON.stringify(DEFAULT_THEME)),
- audio: JSON.parse(JSON.stringify(DEFAULT_AUDIO)),
- volume: 0.7, voiceEnabled: false
-};
-let presets = {};
-let state = { timeLeft: 0, totalTime: 0, currentRound: 1, phaseIndex: 0, isRunning: false, nextRandomTick: -1, lastLoadedPreset: null, lastTickTimestamp: 0, sessionPhases: [] };
-let audioCtx, masterGain, compressor, wakeLock, testLoopInterval;
-
-// WEB WORKER TIMER
-const workerCode = `
-  let timer = null;
-  self.onmessage = function(e) {
-    if (e.data === 'start') {
-      if (timer) clearInterval(timer);
-      timer = setInterval(() => self.postMessage('tick'), 1000);
-    } else if (e.data === 'stop') {
-      clearInterval(timer);
-      timer = null;
-    }
-  };
-`;
-const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
-const timerWorker = new Worker(URL.createObjectURL(workerBlob));
-timerWorker.onmessage = function() { if (state.isRunning) tick(); };
-
-function upgradeData() {
- if (!config.theme) config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME));
- if (!config.audio) config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO));
- if (config.volume === undefined) config.volume = 0.7;
- if (config.voiceEnabled === undefined) config.voiceEnabled = false;
- config.phases.forEach(p => {
-    if (p.type === 'rest' && !p.warning) p.warning = { active: false };
-    if (p.type === 'fight' && !p.random) p.random = { active: false, min: 5, max: 10 };
- });
-}
-
-function applyThemeToCSS() {
- document.documentElement.style.setProperty('--fight', config.theme.fight);
- document.documentElement.style.setProperty('--rest', config.theme.rest);
-}
-
-async function requestWakeLock() { 
-    if ('wakeLock' in navigator) { 
-        try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} 
-    } 
-}
-function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
-
-function ensureAudio() {
- if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    compressor = audioCtx.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-15, audioCtx.currentTime);
-    masterGain = audioCtx.createGain();
-    updateMasterGain();
-    compressor.connect(masterGain);
-    masterGain.connect(audioCtx.destination);
- }
- if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-
-function updateMasterGain() {
-    if(masterGain && audioCtx) {
-        const gainVal = Math.pow(config.volume, 2) * 6.0;
-        masterGain.gain.setTargetAtTime(gainVal, audioCtx.currentTime, 0.02);
-    }
-}
-
-function play(f, t, d, startTime = null) {
- if (!audioCtx) return;
- const now = (startTime !== null) ? startTime : audioCtx.currentTime;
- const o = audioCtx.createOscillator();
- const g = audioCtx.createGain();
- o.type = t; o.frequency.setValueAtTime(f, now);
- g.gain.setValueAtTime(0.0001, now);
- g.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
- g.gain.setValueAtTime(1.0, now + d);
- g.gain.exponentialRampToValueAtTime(0.0001, now + d + 0.01);
- o.connect(g); g.connect(compressor);
- o.start(now); o.stop(now + d + 0.02);
-}
-
-const audio = { 
- gong: () => { ensureAudio(); play(config.audio.gong.freq, config.audio.gong.type, 1.0, audioCtx.currentTime); }, 
- tick: () => { ensureAudio(); play(config.audio.tick.freq, config.audio.tick.type, 0.15); }, 
- sprint: () => { ensureAudio(); play(config.audio.sprint.freq, config.audio.sprint.type, 0.8, audioCtx.currentTime); },
- warning: () => {
-    ensureAudio();
-    const now = audioCtx.currentTime;
-    [0, 0.2, 0.4].forEach(off => play(1000, 'sine', 0.15, now + off));
- },
- speak: (text) => {
-    if(!config.voiceEnabled) return;
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = 'it-IT'; msg.volume = config.volume;
-    window.speechSynthesis.speak(msg);
- }
-};
-
-// FIX LAG TIMER V6.9.6
-async function toggleTimer() {
- ensureAudio();
- const btn = document.getElementById("btn-toggle");
- if(state.isRunning) { 
-    state.isRunning = false; releaseWakeLock(); timerWorker.postMessage('stop'); btn.textContent = "RIPRENDI"; 
- } else {
-    // Start immediato
-    state.isRunning = true; 
-    state.lastTickTimestamp = Date.now();
-    timerWorker.postMessage('start'); 
-    btn.textContent = "PAUSA";
-
-    if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
-        audio.gong();
-        if(document.getElementById("status-display").textContent === "PRONTO?"){
-            document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
-            if(config.voiceEnabled) setTimeout(()=>audio.speak("Round " + state.currentRound), 1000);
-        }
-    }
-    requestWakeLock(); // Senza await per non bloccare
-    setNextR();
- }
-}
-
-function tick() {
- if(!state.isRunning) return;
- const now = Date.now();
- const elapsedSeconds = Math.floor((now - state.lastTickTimestamp) / 1000);
- if (elapsedSeconds <= 0) return;
- for (let i = 0; i < elapsedSeconds; i++) {
-    state.totalTime++;
-    state.lastTickTimestamp += 1000;
-    if(state.timeLeft > 1) {
-        state.timeLeft--;
-        const currentP = state.sessionPhases[state.phaseIndex];
-        if(currentP.type === 'rest') {
-            if(state.timeLeft === 10 && currentP.warning?.active) audio.warning();
-            if(state.timeLeft <= 3) audio.tick();
-        }
-        if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { audio.sprint(); setNextR(); }
-    } else { nextPh(); }
- }
- updateUI();
-}
-
-function nextPh() {
- audio.gong(); state.phaseIndex++;
- if(state.phaseIndex >= state.sessionPhases.length) { state.phaseIndex = 0; state.currentRound++; }
- const p = state.sessionPhases[state.phaseIndex];
- state.timeLeft = p.dur;
- document.getElementById("status-display").textContent = getPhaseLabel(p);
- if (config.voiceEnabled) setTimeout(() => audio.speak(p.type==='fight' ? "Round " + state.currentRound : "Riposo"), 1000);
- setNextR(); updateTheme();
-}
-
-function skipNext() {
-    ensureAudio(); if (state.isRunning) audio.gong();
-    state.phaseIndex++;
-    if(state.phaseIndex >= state.sessionPhases.length) { state.phaseIndex = 0; state.currentRound++; }
-    state.timeLeft = state.sessionPhases[state.phaseIndex].dur;
-    document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
-    setNextR(); updateTheme(); updateUI();
-}
-
-function skipPrev() {
-    ensureAudio(); if (state.isRunning) audio.gong();
-    const currentPhaseDur = state.sessionPhases[state.phaseIndex].dur;
-    if (state.timeLeft < currentPhaseDur - 2) { state.timeLeft = currentPhaseDur; } 
-    else {
-        state.phaseIndex--;
-        if (state.phaseIndex < 0) {
-            if (state.currentRound > 1) { state.currentRound--; state.phaseIndex = state.sessionPhases.length - 1; } 
-            else { state.phaseIndex = 0; }
-        }
-        state.timeLeft = state.sessionPhases[state.phaseIndex].dur;
-    }
-    document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
-    setNextR(); updateTheme(); updateUI();
-}
-
-// LOGICA INTERFACCIA E PRESET (Rimasta invariata per compatibilità)
-function calculateTotals() {
- let work = 0; let total = 0;
- config.phases.forEach(p => { total += p.dur; if(p.type === 'fight') work += p.dur; });
- const f = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
- document.getElementById("total-work-time").textContent = f(work);
- document.getElementById("total-circuit-time").textContent = f(total);
-}
-
-function renderPhases() {
- const container = document.getElementById("phases-list"); container.innerHTML = "";
- const isRunning = state.isRunning;
- config.phases.forEach((p, idx) => {
- const div = document.createElement("div"); div.className = "phase-item";
- div.innerHTML = `
- <div class="phase-header">
- <div class="sort-controls">
- <button class="btn-sort" ${idx===0 || isRunning ?'disabled':''} onclick="moveP(${idx},-1)">▲</button>
- <button class="btn-sort" ${idx===config.phases.length-1 || isRunning ?'disabled':''} onclick="moveP(${idx},1)">▼</button>
- </div>
- <input type="number" class="phase-dur-input" value="${p.dur}" ${isRunning?'disabled':''} onchange="config.phases[${idx}].dur=parseInt(this.value);save();calculateTotals()">
- <input type="text" class="phase-label-input" placeholder="${p.type==='fight'?'COMBATTI!':'RIPOSO'}" value="${p.label || ''}" onchange="config.phases[${idx}].label=this.value;save()">
- <div class="type-toggle ${p.type==='fight'?'type-fight':'type-rest'}" onclick="togglePhaseType(${idx})">${p.type==='fight'?'LAVORO':'RIPOSO'}</div>
- <button onclick="clonePhase(${idx})" class="btn-phase-action" ${isRunning?'disabled':''}>📄</button>
- <button onclick="config.phases.splice(${idx},1);renderPhases();save();calculateTotals()" class="btn-phase-action" ${isRunning?'disabled':''}>✕</button>
- </div>
- ${p.type==='fight' ? `<div class="phase-random-settings"><button class="random-toggle-btn ${p.random.active?'random-active':''}" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active?'ON':'OFF'}</button><div class="random-inputs"><input type="number" value="${p.random.min}" onchange="config.phases[${idx}].random.min=parseInt(this.value);save()">-<input type="number" value="${p.random.max}" onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s</div></div>` : `<div class="phase-random-settings"><button class="random-toggle-btn ${p.warning?.active?'random-active':''}" onclick="config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI ${p.warning?.active?'ON':'OFF'}</button></div>`}`;
- container.appendChild(div);
- });
- calculateTotals();
-}
-
-function togglePhaseType(idx) {
-    if(state.isRunning) return;
-    const p = config.phases[idx];
-    if (p.type === 'fight') { p.type = 'rest'; p.warning = { active: false }; } 
-    else { p.type = 'fight'; p.random = { active: false, min: 5, max: 10 }; }
-    renderPhases(); save(); calculateTotals();
-}
-function moveP(i, d) { if(state.isRunning) return; [config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; save(); renderPhases(); }
-function addPhase() { if(state.isRunning) return; config.phases.push({type:'fight', dur:60, label: '', random:{active:false, min:5, max:10}}); save(); renderPhases(); }
-function clonePhase(idx) { if(state.isRunning) return; const cloned = JSON.parse(JSON.stringify(config.phases[idx])); config.phases.splice(idx + 1, 0, cloned); save(); renderPhases(); }
-
-function renderPresets() {
- const c = document.getElementById("presets-list"); c.innerHTML = "";
- for (let n in presets) {
- const d = document.createElement("div"); d.className = "preset-item";
- d.innerHTML = `<button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" onclick="applyP('${n}')">${n}</button><button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button><button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button><button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>`;
- c.appendChild(d);
- }
-}
-function applyP(n) { if(state.isRunning) return; state.lastLoadedPreset = n; config = JSON.parse(JSON.stringify(presets[n])); upgradeData(); applyThemeToCSS(); updateLabUI(); document.getElementById("active-preset-controls").style.display = "block"; document.getElementById("active-preset-name").textContent = n; renderPhases(); renderPresets(); initTimer(); save(); }
-function overwritePreset() { if(state.lastLoadedPreset){ presets[state.lastLoadedPreset] = JSON.parse(JSON.stringify(config)); save(); alert("Preset Aggiornato!"); } }
-function saveCurrentAsPreset() { const n = document.getElementById("preset-name").value.trim(); if(!n) return; presets[n] = JSON.parse(JSON.stringify(config)); applyP(n); document.getElementById("preset-name").value = ""; }
-function deletePreset(name) { if(confirm(`Eliminare "${name}"?`)) { delete presets[name]; save(); renderPresets(); } }
-function renamePreset(oldName) { const n = prompt("Nuovo nome:", oldName); if (n && n.trim() !== "" && n !== oldName) { presets[n] = presets[oldName]; delete presets[oldName]; if(state.lastLoadedPreset === oldName) state.lastLoadedPreset = n; save(); renderPresets(); } }
-
-function exportData() {
- const data = { config, presets, exportType: 'FULL_BACKUP' };
- const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
- const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `BoxingTimer_Backup.json`; a.click();
-}
-function importData(event) {
- const file = event.target.files[0]; if (!file) return;
- const reader = new FileReader();
- reader.onload = (e) => {
-    try {
-        const imported = JSON.parse(e.target.result);
-        if (imported.presets) { presets = imported.presets; if(imported.config) config = imported.config; }
-        upgradeData(); applyThemeToCSS(); updateLabUI(); save(); renderPhases(); renderPresets(); initTimer();
-    } catch(err) { alert("Errore file."); }
- };
- reader.readAsText(file);
-}
-
-// LABORATORIO
-function openLab() { document.getElementById('settings-main').style.display = 'none'; document.getElementById('settings-lab').style.display = 'flex'; updateLabUI(); }
-function closeLab() { if(testLoopInterval) toggleLoopTest(); document.getElementById('settings-lab').style.display = 'none'; document.getElementById('settings-main').style.display = 'flex'; }
-function updateLabUI() {
- document.getElementById('col-fight').value = config.theme.fight;
- document.getElementById('col-rest').value = config.theme.rest;
- document.getElementById('master-vol').value = config.volume;
- document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%";
- document.getElementById('voice-toggle-btn').textContent = config.voiceEnabled ? "VOCE ON" : "VOCE OFF";
- document.getElementById('voice-toggle-btn').className = "random-toggle-btn " + (config.voiceEnabled ? "random-active" : "");
- ['gong', 'tick', 'sprint'].forEach(k => {
-    document.getElementById(`wave-${k}`).value = config.audio[k].type;
-    document.getElementById(`freq-${k}`).value = config.audio[k].freq;
-    document.getElementById(`val-${k}`).textContent = config.audio[k].freq;
- });
-}
-function updateVolumeConfig() { config.volume = parseFloat(document.getElementById('master-vol').value); document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%"; updateMasterGain(); save(); }
-function updateColors() { config.theme.fight = document.getElementById('col-fight').value; config.theme.rest = document.getElementById('col-rest').value; applyThemeToCSS(); save(); }
-function updateAudioConfig() { ['gong', 'tick', 'sprint'].forEach(k => { config.audio[k].type = document.getElementById(`wave-${k}`).value; config.audio[k].freq = parseInt(document.getElementById(`freq-${k}`).value); document.getElementById(`val-${k}`).textContent = config.audio[k].freq; }); save(); }
-function resetColors() { config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME)); updateLabUI(); applyThemeToCSS(); save(); }
-function resetAudio() { config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO)); updateLabUI(); save(); }
-function toggleVoice() { config.voiceEnabled = !config.voiceEnabled; updateLabUI(); save(); }
-function toggleLoopTest() {
-    ensureAudio(); const btn = document.getElementById('btn-loop-test');
-    if (testLoopInterval) { clearInterval(testLoopInterval); testLoopInterval = null; btn.textContent = "▶ LOOP TEST"; } 
-    else { btn.textContent = "■ STOP"; testLoopInterval = setInterval(() => { audio.tick(); }, 1000); }
-}
-
-// UTILS
-function getPhaseLabel(p) { return (p.label && p.label.trim() !== "") ? p.label.toUpperCase() : (p.type === 'fight' ? "COMBATTI!" : "RIPOSO"); }
-function setNextR() {
- const p = state.sessionPhases[state.phaseIndex];
- if(p.type==='fight' && p.random.active) { state.nextRandomTick = state.timeLeft - (Math.floor(Math.random() * (p.random.max - p.random.min + 1)) + p.random.min); } else state.nextRandomTick = -1;
-}
-function save() { localStorage.setItem('boxing_timer_config', JSON.stringify(config)); localStorage.setItem('boxing_timer_presets', JSON.stringify(presets)); }
-function load() {
- const c = localStorage.getItem('boxing_timer_config'), p = localStorage.getItem('boxing_timer_presets');
- if(c) config = JSON.parse(c); if(p) presets = JSON.parse(p);
- upgradeData(); applyThemeToCSS();
-}
-function updateUI() {
- const m = Math.floor(state.timeLeft/60), s = state.timeLeft%60;
- document.getElementById("time-display").textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
- const tm = Math.floor(state.totalTime/60), ts = state.totalTime%60;
- document.getElementById("total-time").textContent = `${String(tm).padStart(2,'0')}:${String(ts).padStart(2,'0')}`;
- document.getElementById("round-display").textContent = `ROUND ${state.currentRound}`;
-}
-function updateTheme() {
- document.body.classList.remove("fight-mode","rest-mode");
- if(state.sessionPhases[state.phaseIndex]) document.body.classList.add(state.sessionPhases[state.phaseIndex].type==='fight'?'fight-mode':'rest-mode');
-}
-function initTimer() { 
- state.sessionPhases = JSON.parse(JSON.stringify(config.phases)); 
- state.timeLeft = state.sessionPhases[0].dur; state.totalTime = 0; state.currentRound = 1; state.phaseIndex = 0; state.isRunning = false;
- timerWorker.postMessage('stop'); document.getElementById("btn-toggle").textContent = "START";
- document.getElementById("status-display").textContent = "PRONTO?";
- updateUI(); updateTheme(); 
-}
-function toggleSettings() { 
- const s = document.getElementById("settings-panel"); 
- if (s.style.display === 'flex') { s.style.display = 'none'; if(!state.isRunning) initTimer(); } 
- else { s.style.display = 'flex'; calculateTotals(); renderPresets(); renderPhases(); }
-}
-function toggleFullscreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-function resetTimer() { state.isRunning = false; releaseWakeLock(); initTimer(); }
-
-// INITIALIZE
-load(); initTimer();
-
-// FORCE LAYOUT RECALC (Fix Android PWA shift)
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        window.scrollTo(0, 0);
-        document.body.style.height = '100dvh';
-    }, 100);
-});
-
-// SERVICE WORKER & UPDATE LOGIC
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=6.9.6').then(reg => {
-    const showUpdateUI = (worker) => {
-      document.getElementById('update-screen').style.display = 'flex';
-      document.getElementById('btn-update-ok').onclick = () => { worker.postMessage({ type: 'SKIP_WAITING' }); };
+    // --- LOGICA CORE ---
+    const DEFAULT_THEME = { fight: '#2e7d32', rest: '#d32f2f' };
+    const DEFAULT_AUDIO = {
+        gong: { type: 'square', freq: 200 },
+        tick: { type: 'square', freq: 800 },
+        sprint: { type: 'square', freq: 600 }
     };
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateUI(newWorker);
-      });
+
+    let config = { 
+        phases: [
+            {type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, 
+            {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}, warning: {active: true}}
+        ],
+        theme: JSON.parse(JSON.stringify(DEFAULT_THEME)),
+        audio: JSON.parse(JSON.stringify(DEFAULT_AUDIO)),
+        volume: 0.7, 
+        voiceEnabled: false
+    };
+
+    let presets = {};
+    let state = { 
+        timeLeft: 0, 
+        totalTime: 0, 
+        currentRound: 1, 
+        phaseIndex: 0, 
+        isRunning: false, 
+        nextRandomTick: -1, 
+        lastLoadedPreset: null, 
+        lastTickTimestamp: 0, 
+        sessionPhases: [] 
+    };
+
+    let audioCtx, masterGain, compressor, wakeLock, testLoopInterval;
+
+    // Web Worker per precisione timer
+    const workerCode = `
+        let timer = null;
+        self.onmessage = function(e) {
+            if (e.data === 'start') {
+                if (timer) clearInterval(timer);
+                timer = setInterval(() => self.postMessage('tick'), 1000);
+            } else if (e.data === 'stop') {
+                clearInterval(timer);
+                timer = null;
+            }
+        };
+    `;
+    const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+    const timerWorker = new Worker(URL.createObjectURL(workerBlob));
+    timerWorker.onmessage = function() { 
+        if (state.isRunning) tick(); 
+    };
+
+    function upgradeData() {
+        if (!config.theme) config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME));
+        if (!config.audio) config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO));
+        if (config.volume === undefined) config.volume = 0.7;
+        if (config.voiceEnabled === undefined) config.voiceEnabled = false;
+        config.phases.forEach(p => {
+            if (p.type === 'rest' && !p.warning) p.warning = { active: false };
+            if (p.type === 'fight' && !p.random) p.random = { active: false, min: 5, max: 10 };
+        });
+    }
+
+    function applyThemeToCSS() {
+        document.documentElement.style.setProperty('--fight', config.theme.fight);
+        document.documentElement.style.setProperty('--rest', config.theme.rest);
+    }
+
+    async function requestWakeLock() { 
+        if ('wakeLock' in navigator) { 
+            try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} 
+        } 
+    }
+
+    function releaseWakeLock() { 
+        if (wakeLock) { wakeLock.release(); wakeLock = null; } 
+    }
+
+    function ensureAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-15, audioCtx.currentTime);
+            masterGain = audioCtx.createGain();
+            updateMasterGain();
+            compressor.connect(masterGain);
+            masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function updateMasterGain() {
+        if(masterGain && audioCtx) {
+            const gainVal = Math.pow(config.volume, 2) * 6.0;
+            masterGain.gain.setTargetAtTime(gainVal, audioCtx.currentTime, 0.02);
+        }
+    }
+
+    function play(f, t, d, startTime = null) {
+        if (!audioCtx) return;
+        const now = (startTime !== null) ? startTime : audioCtx.currentTime;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = t; 
+        o.frequency.setValueAtTime(f, now);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
+        g.gain.setValueAtTime(1.0, now + d);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + d + 0.01);
+        o.connect(g); 
+        g.connect(compressor);
+        o.start(now); 
+        o.stop(now + d + 0.02);
+    }
+
+    const audio = { 
+        gong: () => { 
+            ensureAudio(); 
+            play(config.audio.gong.freq, config.audio.gong.type, 1.0, audioCtx.currentTime); 
+        }, 
+        tick: () => { 
+            ensureAudio(); 
+            play(config.audio.tick.freq, config.audio.tick.type, 0.15); 
+        }, 
+        sprint: () => { 
+            ensureAudio(); 
+            play(config.audio.sprint.freq, config.audio.sprint.type, 0.8, audioCtx.currentTime); 
+        },
+        warning: () => {
+            ensureAudio();
+            const now = audioCtx.currentTime;
+            [0, 0.2, 0.4].forEach(off => play(1000, 'sine', 0.15, now + off));
+        },
+        speak: (text) => {
+            if(!config.voiceEnabled) return;
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'it-IT'; 
+            msg.volume = config.volume;
+            window.speechSynthesis.speak(msg);
+        }
+    };
+
+    // --- AZIONI TIMER ---
+
+    async function toggleTimer() {
+        ensureAudio();
+        const btn = document.getElementById("btn-toggle");
+        
+        if(state.isRunning) { 
+            state.isRunning = false; 
+            releaseWakeLock(); 
+            timerWorker.postMessage('stop'); 
+            btn.textContent = "RIPRENDI"; 
+        } else {
+            state.isRunning = true; 
+            state.lastTickTimestamp = Date.now();
+            timerWorker.postMessage('start'); 
+            btn.textContent = "PAUSA";
+
+            // CORREZIONE: Suona il gong se siamo all'inizio di una fase (anche dopo skip)
+            if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
+                audio.gong();
+                
+                // Aggiorna etichetta se era in "PRONTO?"
+                if(document.getElementById("status-display").textContent === "PRONTO?"){
+                    document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
+                }
+                
+                // Sintesi vocale all'avvio fase
+                if(config.voiceEnabled) {
+                    const p = state.sessionPhases[state.phaseIndex];
+                    setTimeout(() => audio.speak(p.type === 'fight' ? "Round " + state.currentRound : "Riposo"), 1000);
+                }
+            }
+            
+            requestWakeLock();
+            setNextR();
+        }
+    }
+
+    function tick() {
+        if(!state.isRunning) return;
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - state.lastTickTimestamp) / 1000);
+        
+        if (elapsedSeconds <= 0) return;
+        
+        for (let i = 0; i < elapsedSeconds; i++) {
+            state.totalTime++;
+            state.lastTickTimestamp += 1000;
+            
+            if(state.timeLeft > 1) {
+                state.timeLeft--;
+                const currentP = state.sessionPhases[state.phaseIndex];
+                
+                if(currentP.type === 'rest') {
+                    if(state.timeLeft === 10 && currentP.warning?.active) audio.warning();
+                    if(state.timeLeft <= 3) audio.tick();
+                }
+                
+                if(state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) { 
+                    audio.sprint(); 
+                    setNextR(); 
+                }
+            } else { 
+                nextPh(); 
+            }
+        }
+        updateUI();
+    }
+
+    function nextPh() {
+        audio.gong(); 
+        state.phaseIndex++;
+        
+        if(state.phaseIndex >= state.sessionPhases.length) { 
+            state.phaseIndex = 0; 
+            state.currentRound++; 
+        }
+        
+        const p = state.sessionPhases[state.phaseIndex];
+        state.timeLeft = p.dur;
+        document.getElementById("status-display").textContent = getPhaseLabel(p);
+        
+        if (config.voiceEnabled) {
+            setTimeout(() => audio.speak(p.type === 'fight' ? "Round " + state.currentRound : "Riposo"), 1000);
+        }
+        
+        setNextR(); 
+        updateTheme();
+    }
+
+    function skipNext() {
+        ensureAudio(); 
+        if (state.isRunning) audio.gong();
+        
+        state.phaseIndex++;
+        if(state.phaseIndex >= state.sessionPhases.length) { 
+            state.phaseIndex = 0; 
+            state.currentRound++; 
+        }
+        
+        state.timeLeft = state.sessionPhases[state.phaseIndex].dur;
+        document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
+        
+        setNextR(); 
+        updateTheme(); 
+        updateUI();
+    }
+
+    function skipPrev() {
+        ensureAudio(); 
+        if (state.isRunning) audio.gong();
+        
+        const currentPhaseDur = state.sessionPhases[state.phaseIndex].dur;
+        
+        if (state.timeLeft < currentPhaseDur - 2) { 
+            state.timeLeft = currentPhaseDur; 
+        } else {
+            state.phaseIndex--;
+            if (state.phaseIndex < 0) {
+                if (state.currentRound > 1) { 
+                    state.currentRound--; 
+                    state.phaseIndex = state.sessionPhases.length - 1; 
+                } else { 
+                    state.phaseIndex = 0; 
+                }
+            }
+            state.timeLeft = state.sessionPhases[state.phaseIndex].dur;
+        }
+        
+        document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
+        
+        setNextR(); 
+        updateTheme(); 
+        updateUI();
+    }
+
+    function resetTimer() { 
+        state.isRunning = false; 
+        releaseWakeLock(); 
+        initTimer(); 
+    }
+
+    // --- GESTIONE IMPOSTAZIONI E PRESET ---
+
+    function calculateTotals() {
+        let work = 0; let total = 0;
+        config.phases.forEach(p => { 
+            total += p.dur; 
+            if(p.type === 'fight') work += p.dur; 
+        });
+        const f = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+        document.getElementById("total-work-time").textContent = f(work);
+        document.getElementById("total-circuit-time").textContent = f(total);
+    }
+
+    function renderPhases() {
+        const container = document.getElementById("phases-list"); 
+        container.innerHTML = "";
+        
+        config.phases.forEach((p, idx) => {
+            const div = document.createElement("div"); 
+            div.className = "phase-item";
+            div.innerHTML = `
+                <div class="phase-header">
+                    <div class="sort-controls">
+                        <button class="btn-sort" ${idx===0?'disabled':''} onclick="moveP(${idx},-1)">▲</button>
+                        <button class="btn-sort" ${idx===config.phases.length-1?'disabled':''} onclick="moveP(${idx},1)">▼</button>
+                    </div>
+                    <input type="number" class="phase-dur-input" value="${p.dur}" onchange="config.phases[${idx}].dur=parseInt(this.value);save();calculateTotals()">
+                    <input type="text" class="phase-label-input" placeholder="${p.type==='fight'?'COMBATTI!':'RIPOSO'}" value="${p.label || ''}" onchange="config.phases[${idx}].label=this.value;save()">
+                    <div class="type-toggle ${p.type==='fight'?'type-fight':'type-rest'}" onclick="togglePhaseType(${idx})">${p.type==='fight'?'LAVORO':'RIPOSO'}</div>
+                    <button onclick="clonePhase(${idx})" class="btn-phase-action">📄</button>
+                    <button onclick="config.phases.splice(${idx},1);renderPhases();save();calculateTotals()" class="btn-phase-action">✕</button>
+                </div>
+                ${p.type==='fight' ? 
+                    `<div class="phase-random-settings">
+                        <button class="random-toggle-btn ${p.random.active?'random-active':''}" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active?'ON':'OFF'}</button>
+                        <div class="random-inputs">
+                            <input type="number" value="${p.random.min}" onchange="config.phases[${idx}].random.min=parseInt(this.value);save()">-<input type="number" value="${p.random.max}" onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s
+                        </div>
+                    </div>` : 
+                    `<div class="phase-random-settings">
+                        <button class="random-toggle-btn ${p.warning?.active?'random-active':''}" onclick="config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI ${p.warning?.active?'ON':'OFF'}</button>
+                    </div>`
+                }
+            `;
+            container.appendChild(div);
+        });
+        calculateTotals();
+    }
+
+    function togglePhaseType(idx) {
+        const p = config.phases[idx];
+        if (p.type === 'fight') { 
+            p.type = 'rest'; 
+            p.warning = { active: false }; 
+        } else { 
+            p.type = 'fight'; 
+            p.random = { active: false, min: 5, max: 10 }; 
+        }
+        renderPhases(); save(); calculateTotals();
+    }
+
+    function moveP(i, d) { 
+        [config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; 
+        save(); renderPhases(); 
+    }
+
+    function addPhase() { 
+        config.phases.push({type:'fight', dur:60, label: '', random:{active:false, min:5, max:10}}); 
+        save(); renderPhases(); 
+    }
+
+    function clonePhase(idx) { 
+        const cloned = JSON.parse(JSON.stringify(config.phases[idx])); 
+        config.phases.splice(idx + 1, 0, cloned); 
+        save(); renderPhases(); 
+    }
+
+    function renderPresets() {
+        const c = document.getElementById("presets-list"); 
+        c.innerHTML = "";
+        for (let n in presets) {
+            const d = document.createElement("div"); 
+            d.className = "preset-item";
+            d.innerHTML = `
+                <button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" onclick="applyP('${n}')">${n}</button>
+                <button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button>
+                <button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button>
+                <button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>
+            `;
+            c.appendChild(d);
+        }
+    }
+
+    function applyP(n) { 
+        state.lastLoadedPreset = n; 
+        config = JSON.parse(JSON.stringify(presets[n])); 
+        upgradeData(); applyThemeToCSS(); updateLabUI(); 
+        document.getElementById("active-preset-controls").style.display = "block"; 
+        document.getElementById("active-preset-name").textContent = n; 
+        renderPhases(); renderPresets(); save(); 
+    }
+
+    function overwritePreset() { 
+        if(state.lastLoadedPreset){ 
+            presets[state.lastLoadedPreset] = JSON.parse(JSON.stringify(config)); 
+            save(); 
+            alert("Preset Aggiornato!"); 
+        } 
+    }
+
+    function saveCurrentAsPreset() { 
+        const n = document.getElementById("preset-name").value.trim(); 
+        if(!n) return; 
+        presets[n] = JSON.parse(JSON.stringify(config)); 
+        applyP(n); 
+        document.getElementById("preset-name").value = ""; 
+    }
+
+    function deletePreset(name) { 
+        if(confirm(`Eliminare "${name}"?`)) { 
+            delete presets[name]; 
+            save(); renderPresets(); 
+        } 
+    }
+
+    function renamePreset(oldName) { 
+        const n = prompt("Nuovo nome:", oldName); 
+        if (n && n.trim() !== "" && n !== oldName) { 
+            presets[n] = presets[oldName]; 
+            delete presets[oldName]; 
+            if(state.lastLoadedPreset === oldName) state.lastLoadedPreset = n; 
+            save(); renderPresets(); 
+        } 
+    }
+
+    // --- EXPORT / IMPORT ---
+
+    function exportData() {
+        const now = new Date();
+        const ts = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}-${now.getMinutes().toString().padStart(2,'0')}`;
+        const data = { config, presets, exportType: 'FULL_BACKUP' };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = `BoxingTimer_Backup_${ts}.json`; 
+        a.click();
+    }
+
+    function exportSinglePreset(name) {
+        const data = { config: presets[name], exportType: 'SINGLE_PRESET', presetName: name };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob);
+        a.download = `Preset_${name.replace(/\s+/g, '_')}.json`; 
+        a.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0]; 
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.exportType === 'FULL_BACKUP') {
+                    const mode = confirm("Backup Completo rilevato.\n\nPremi OK per SOVRASCRIVERE tutti i preset correnti.\nPremi ANNULLA per AGGIUNGERE i nuovi preset alla lista attuale.");
+                    if (mode) { 
+                        presets = imported.presets; 
+                        config = imported.config; 
+                    } else { 
+                        Object.assign(presets, imported.presets); 
+                    }
+                } else if (imported.exportType === 'SINGLE_PRESET') {
+                    let name = imported.presetName || "Imported Preset";
+                    let finalName = name; let count = 1;
+                    while (presets[finalName]) { finalName = `${name} (${count++})`; }
+                    presets[finalName] = imported.config;
+                    alert(`Preset "${finalName}" importato correttamente.`);
+                } else {
+                    Object.assign(presets, imported.presets || {});
+                }
+                upgradeData(); applyThemeToCSS(); updateLabUI(); save(); renderPhases(); renderPresets();
+            } catch(err) { 
+                alert("Errore nel file di importazione."); 
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // --- LABORATORIO ---
+
+    function openLab() { 
+        document.getElementById('settings-main').style.display = 'none'; 
+        document.getElementById('settings-lab').style.display = 'flex'; 
+        updateLabUI(); 
+    }
+
+    function closeLab() { 
+        if(testLoopInterval) toggleLoopTest(); 
+        document.getElementById('settings-lab').style.display = 'none'; 
+        document.getElementById('settings-main').style.display = 'flex'; 
+    }
+
+    function updateLabUI() {
+        document.getElementById('col-fight').value = config.theme.fight;
+        document.getElementById('col-rest').value = config.theme.rest;
+        document.getElementById('master-vol').value = config.volume;
+        document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%";
+        document.getElementById('voice-toggle-btn').textContent = config.voiceEnabled ? "VOCE ON" : "VOCE OFF";
+        document.getElementById('voice-toggle-btn').className = "random-toggle-btn " + (config.voiceEnabled ? "random-active" : "");
+        ['gong', 'tick', 'sprint'].forEach(k => {
+            document.getElementById(`wave-${k}`).value = config.audio[k].type;
+            document.getElementById(`freq-${k}`).value = config.audio[k].freq;
+            document.getElementById(`val-${k}`).textContent = config.audio[k].freq;
+        });
+    }
+
+    function updateVolumeConfig() { 
+        config.volume = parseFloat(document.getElementById('master-vol').value); 
+        document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + "%"; 
+        updateMasterGain(); save(); 
+    }
+
+    function updateColors() { 
+        config.theme.fight = document.getElementById('col-fight').value; 
+        config.theme.rest = document.getElementById('col-rest').value; 
+        applyThemeToCSS(); save(); 
+    }
+
+    function updateAudioConfig() { 
+        ['gong', 'tick', 'sprint'].forEach(k => { 
+            config.audio[k].type = document.getElementById(`wave-${k}`).value; 
+            config.audio[k].freq = parseInt(document.getElementById(`freq-${k}`).value); 
+            document.getElementById(`val-${k}`).textContent = config.audio[k].freq; 
+        }); 
+        save(); 
+    }
+
+    function resetColors() { 
+        config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME)); 
+        updateLabUI(); applyThemeToCSS(); save(); 
+    }
+
+    function resetAudio() { 
+        config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO)); 
+        updateLabUI(); save(); 
+    }
+
+    function toggleVoice() { 
+        config.voiceEnabled = !config.voiceEnabled; 
+        updateLabUI(); save(); 
+    }
+
+    function toggleLoopTest() {
+        ensureAudio(); 
+        const btn = document.getElementById('btn-loop-test');
+        if (testLoopInterval) { 
+            clearInterval(testLoopInterval); 
+            testLoopInterval = null; 
+            btn.textContent = "▶ LOOP TEST"; 
+        } else { 
+            btn.textContent = "■ STOP"; 
+            let cycle = 0;
+            testLoopInterval = setInterval(() => { 
+                if (cycle === 0) audio.tick();
+                else if (cycle === 1) audio.sprint();
+                else audio.gong();
+                cycle = (cycle + 1) % 3;
+            }, 1200); 
+        }
+    }
+
+    // --- UTILS UI ---
+
+    function getPhaseLabel(p) { 
+        return (p.label && p.label.trim() !== "") ? p.label.toUpperCase() : (p.type === 'fight' ? "COMBATTI!" : "RIPOSO"); 
+    }
+
+    function setNextR() {
+        const p = state.sessionPhases[state.phaseIndex];
+        if(p.type==='fight' && p.random.active) { 
+            state.nextRandomTick = state.timeLeft - (Math.floor(Math.random() * (p.random.max - p.random.min + 1)) + p.random.min); 
+        } else {
+            state.nextRandomTick = -1;
+        }
+    }
+
+    function save() { 
+        localStorage.setItem('boxing_timer_config', JSON.stringify(config)); 
+        localStorage.setItem('boxing_timer_presets', JSON.stringify(presets)); 
+    }
+
+    function load() {
+        const c = localStorage.getItem('boxing_timer_config');
+        const p = localStorage.getItem('boxing_timer_presets');
+        if(c) config = JSON.parse(c); 
+        if(p) presets = JSON.parse(p);
+        upgradeData(); 
+        applyThemeToCSS();
+    }
+
+    function updateUI() {
+        const m = Math.floor(state.timeLeft/60), s = state.timeLeft%60;
+        document.getElementById("time-display").textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const tm = Math.floor(state.totalTime/60), ts = state.totalTime%60;
+        document.getElementById("total-time").textContent = `${String(tm).padStart(2,'0')}:${String(ts).padStart(2,'0')}`;
+        document.getElementById("round-display").textContent = `ROUND ${state.currentRound}`;
+    }
+
+    function updateTheme() {
+        document.body.classList.remove("fight-mode","rest-mode");
+        if(state.sessionPhases[state.phaseIndex]) {
+            document.body.classList.add(state.sessionPhases[state.phaseIndex].type === 'fight' ? 'fight-mode' : 'rest-mode');
+        }
+    }
+
+    function initTimer() { 
+        state.sessionPhases = JSON.parse(JSON.stringify(config.phases)); 
+        state.timeLeft = state.sessionPhases[0].dur; 
+        state.totalTime = 0; 
+        state.currentRound = 1; 
+        state.phaseIndex = 0; 
+        state.isRunning = false; 
+        timerWorker.postMessage('stop'); 
+        document.getElementById("btn-toggle").textContent = "START"; 
+        document.getElementById("status-display").textContent = "PRONTO?"; 
+        updateUI(); 
+        updateTheme(); 
+    }
+
+    function toggleSettings() { 
+        const s = document.getElementById("settings-panel"); 
+        if (s.style.display === 'flex') { 
+            s.style.display = 'none'; 
+        } else { 
+            s.style.display = 'flex'; 
+            checkSettingsLock();
+            calculateTotals(); 
+            renderPresets(); 
+            renderPhases(); 
+        }
+    }
+
+    function checkSettingsLock() {
+        const isRunning = state.isRunning;
+        const structure = document.getElementById("section-structure");
+        const presetsSec = document.getElementById("section-presets");
+        const lockMsg = document.getElementById("running-lock-msg");
+        if (isRunning) { 
+            structure.style.display = "none"; 
+            presetsSec.style.display = "none"; 
+            lockMsg.style.display = "block"; 
+        } else { 
+            structure.style.display = "block"; 
+            presetsSec.style.display = "block"; 
+            lockMsg.style.display = "none"; 
+        }
+    }
+
+    function toggleFullscreen() { 
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen(); 
+        else document.exitFullscreen(); 
+    }
+
+    // --- INITIALIZE ---
+    load(); 
+    initTimer();
+
+    window.addEventListener('load', () => { 
+        setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
-    if (reg.waiting) showUpdateUI(reg.waiting);
-  });
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return; refreshing = true; window.location.reload();
-  });
-}
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js?v=6.9.7').then(reg => {
+            const showUpdateUI = (worker) => {
+                document.getElementById('update-screen').style.display = 'flex';
+                document.getElementById('btn-update-ok').onclick = () => { 
+                    worker.postMessage({ type: 'SKIP_WAITING' }); 
+                };
+            };
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateUI(newWorker);
+                });
+            });
+            if (reg.waiting) showUpdateUI(reg.waiting);
+        });
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return; 
+            refreshing = true; 
+            window.location.reload();
+        });
+    }
 </script>
 </body>
 </html>
