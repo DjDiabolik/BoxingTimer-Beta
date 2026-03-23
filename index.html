@@ -685,14 +685,37 @@
         document.documentElement.style.setProperty('--rest', config.theme.rest);
     }
 
+    // --- GESTIONE WAKELOCK PERSISTENTE ---
     async function requestWakeLock() { 
         if ('wakeLock' in navigator) { 
-            try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} 
+            try { 
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => {
+                    wakeLock = null;
+                });
+            } catch(e) {
+                console.error("WakeLock Error:", e);
+            } 
         } 
     }
 
+    // Ripristina il lock se l'app torna visibile
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    });
+
+    // Attivazione al primo tocco utile
+    document.addEventListener('pointerdown', () => {
+        if (!wakeLock) requestWakeLock();
+    }, { once: false });
+
     function releaseWakeLock() { 
-        if (wakeLock) { wakeLock.release(); wakeLock = null; } 
+        if (wakeLock) { 
+            wakeLock.release(); 
+            wakeLock = null; 
+        } 
     }
 
     function ensureAudio() {
@@ -766,7 +789,6 @@
         
         if(state.isRunning) { 
             state.isRunning = false; 
-            releaseWakeLock(); 
             timerWorker.postMessage('stop'); 
             btn.textContent = "RIPRENDI"; 
         } else {
@@ -775,18 +797,15 @@
             timerWorker.postMessage('start'); 
             btn.textContent = "PAUSA";
 
-            // CORREZIONE: Suona il gong se siamo all'inizio di una fase (anche dopo skip)
             if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
                 if (!state.gongJustPlayed) {
                     audio.gong();
                 }
                 
-                // Aggiorna etichetta se era in "PRONTO?"
                 if(document.getElementById("status-display").textContent === "PRONTO?"){
                     document.getElementById("status-display").textContent = getPhaseLabel(state.sessionPhases[state.phaseIndex]);
                 }
                 
-                // Sintesi vocale all'avvio fase
                 if(config.voiceEnabled) {
                     const p = state.sessionPhases[state.phaseIndex];
                     setTimeout(() => audio.speak(p.type === 'fight' ? "Round " + state.currentRound : "Riposo"), 1000);
@@ -905,7 +924,6 @@
 
     function resetTimer() { 
         state.isRunning = false; 
-        releaseWakeLock(); 
         initTimer(); 
     }
 
