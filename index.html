@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.7">
+    <link rel="manifest" href="./manifest.json?v=6.9.9">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.7</title>
+    <title>BOXING TIMER V6.9.9</title>
 
     <style>
         :root { 
@@ -466,7 +466,7 @@
 <body>
 
     <div id="update-screen">
-        <h2>V6.9.7 DISPONIBILE</h2>
+        <h2>V6.9.9 DISPONIBILE</h2>
         <p>Miglioramenti alla precisione e alla gestione preset.<br>Tocca OK per riavviare.</p>
         <button id="btn-update-ok">OK</button>
     </div>
@@ -494,7 +494,7 @@
         <div id="settings-main" class="view-container">
             
             <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.7)</h3>
+                <h3>PRESET ALLENAMENTO (V6.9.9)</h3>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -624,7 +624,7 @@
     };
 
     let config = { 
-        phases: [
+        phases:[
             {type: 'fight', dur: 180, label: '', random: {active: false, min: 5, max: 10}}, 
             {type: 'rest', dur: 60, label: '', random: {active: false, min: 5, max: 10}, warning: {active: true}}
         ],
@@ -644,7 +644,8 @@
         nextRandomTick: -1, 
         lastLoadedPreset: null, 
         lastTickTimestamp: 0, 
-        sessionPhases: [] 
+        gongJustPlayed: false,
+        sessionPhases:[] 
     };
 
     let audioCtx, masterGain, compressor, wakeLock, testLoopInterval;
@@ -746,8 +747,7 @@
         },
         warning: () => {
             ensureAudio();
-            const now = audioCtx.currentTime;
-            [0, 0.2, 0.4].forEach(off => play(1000, 'sine', 0.15, now + off));
+            const now = audioCtx.currentTime;[0, 0.2, 0.4].forEach(off => play(1000, 'sine', 0.15, now + off));
         },
         speak: (text) => {
             if(!config.voiceEnabled) return;
@@ -777,7 +777,9 @@
 
             // CORREZIONE: Suona il gong se siamo all'inizio di una fase (anche dopo skip)
             if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
-                audio.gong();
+                if (!state.gongJustPlayed) {
+                    audio.gong();
+                }
                 
                 // Aggiorna etichetta se era in "PRONTO?"
                 if(document.getElementById("status-display").textContent === "PRONTO?"){
@@ -791,6 +793,7 @@
                 }
             }
             
+            state.gongJustPlayed = false;
             requestWakeLock();
             setNextR();
         }
@@ -850,7 +853,10 @@
 
     function skipNext() {
         ensureAudio(); 
-        if (state.isRunning) audio.gong();
+        if (state.isRunning) {
+            audio.gong();
+            state.gongJustPlayed = true;
+        }
         
         state.phaseIndex++;
         if(state.phaseIndex >= state.sessionPhases.length) { 
@@ -868,7 +874,10 @@
 
     function skipPrev() {
         ensureAudio(); 
-        if (state.isRunning) audio.gong();
+        if (state.isRunning) {
+            audio.gong();
+            state.gongJustPlayed = true;
+        }
         
         const currentPhaseDur = state.sessionPhases[state.phaseIndex].dur;
         
@@ -961,8 +970,7 @@
         renderPhases(); save(); calculateTotals();
     }
 
-    function moveP(i, d) { 
-        [config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; 
+    function moveP(i, d) {[config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; 
         save(); renderPhases(); 
     }
 
@@ -1129,8 +1137,7 @@
         applyThemeToCSS(); save(); 
     }
 
-    function updateAudioConfig() { 
-        ['gong', 'tick', 'sprint'].forEach(k => { 
+    function updateAudioConfig() {['gong', 'tick', 'sprint'].forEach(k => { 
             config.audio[k].type = document.getElementById(`wave-${k}`).value; 
             config.audio[k].freq = parseInt(document.getElementById(`freq-${k}`).value); 
             document.getElementById(`val-${k}`).textContent = config.audio[k].freq; 
@@ -1223,6 +1230,7 @@
         state.currentRound = 1; 
         state.phaseIndex = 0; 
         state.isRunning = false; 
+        state.gongJustPlayed = false;
         timerWorker.postMessage('stop'); 
         document.getElementById("btn-toggle").textContent = "START"; 
         document.getElementById("status-display").textContent = "PRONTO?"; 
@@ -1234,6 +1242,9 @@
         const s = document.getElementById("settings-panel"); 
         if (s.style.display === 'flex') { 
             s.style.display = 'none'; 
+            if (!state.isRunning && state.totalTime === 0) {
+                initTimer();
+            }
         } else { 
             s.style.display = 'flex'; 
             checkSettingsLock();
@@ -1244,11 +1255,11 @@
     }
 
     function checkSettingsLock() {
-        const isRunning = state.isRunning;
+        const shouldLock = state.isRunning || state.totalTime > 0;
         const structure = document.getElementById("section-structure");
         const presetsSec = document.getElementById("section-presets");
         const lockMsg = document.getElementById("running-lock-msg");
-        if (isRunning) { 
+        if (shouldLock) { 
             structure.style.display = "none"; 
             presetsSec.style.display = "none"; 
             lockMsg.style.display = "block"; 
@@ -1273,7 +1284,7 @@
     });
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=6.9.7').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=6.9.9').then(reg => {
             const showUpdateUI = (worker) => {
                 document.getElementById('update-screen').style.display = 'flex';
                 document.getElementById('btn-update-ok').onclick = () => { 
