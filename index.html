@@ -1,9 +1,9 @@
-<!-- BOXING TIMER V6.9.9 - Rev5 (Fix Settings Lock UI) -->
+<!-- BOXING TIMER V6.9.9 - Rev6 (Fix Settings Lock UI) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev6">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BOXING TIMER V6.9.9</title>
@@ -70,9 +70,12 @@
             font-size: 1.5rem; 
             font-weight: bold; 
             cursor: pointer; 
-            height: auto;
-            flex-shrink: 0;
+            /* Fix per espansione verticale anomala */
+            flex: 0 0 auto; 
+            height: fit-content;
+            min-height: 60px;
             max-width: 90%;
+            line-height: 1.2;
         }
 
         /* Header */
@@ -473,7 +476,7 @@
 <body>
 
     <div id="update-screen">
-        <h2>V6.9.9rev5 DISPONIBILE</h2>
+        <h2>V6.9.9rev6 DISPONIBILE</h2>
         <p>Miglioramenti generici UI.<br>Tocca OK per riavviare.</p>
         <button id="btn-update-ok">OK</button>
     </div>
@@ -501,7 +504,7 @@
         <div id="settings-main" class="view-container">
             
             <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.9rev5)</h3>
+                <h3>PRESET ALLENAMENTO (V6.9.9rev6)</h3>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -1310,7 +1313,7 @@
 
     if ('serviceWorker' in navigator) {
         let isUpdateUIActive = false;
-        navigator.serviceWorker.register('./sw.js?v=6.9.9').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=6.9.9rev6').then(reg => {
             const showUpdateUI = (worker) => {
                 if (isUpdateUIActive) return;
                 isUpdateUIActive = true;
