@@ -1,4 +1,4 @@
-<!-- BOXING TIMER V6.9.9 - Rev3 (Ottimizzazione Layout Controlli Tablet/Mobile) -->
+<!-- BOXING TIMER V6.9.9 - Rev5 (Fix Settings Lock UI) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -58,6 +58,7 @@
             justify-content: center; 
             text-align: center; 
             padding: 30px; 
+            gap: 20px;
         }
 
         #btn-update-ok { 
@@ -69,6 +70,9 @@
             font-size: 1.5rem; 
             font-weight: bold; 
             cursor: pointer; 
+            height: auto;
+            flex-shrink: 0;
+            max-width: 90%;
         }
 
         /* Header */
@@ -469,8 +473,8 @@
 <body>
 
     <div id="update-screen">
-        <h2>V6.9.9 DISPONIBILE</h2>
-        <p>Miglioramenti alla precisione e alla gestione preset.<br>Tocca OK per riavviare.</p>
+        <h2>V6.9.9rev5 DISPONIBILE</h2>
+        <p>Miglioramenti generici UI.<br>Tocca OK per riavviare.</p>
         <button id="btn-update-ok">OK</button>
     </div>
 
@@ -497,7 +501,7 @@
         <div id="settings-main" class="view-container">
             
             <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.9rev3)</h3>
+                <h3>PRESET ALLENAMENTO (V6.9.9rev5)</h3>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -1305,11 +1309,15 @@
     });
 
     if ('serviceWorker' in navigator) {
+        let isUpdateUIActive = false;
         navigator.serviceWorker.register('./sw.js?v=6.9.9').then(reg => {
             const showUpdateUI = (worker) => {
+                if (isUpdateUIActive) return;
+                isUpdateUIActive = true;
                 document.getElementById('update-screen').style.display = 'flex';
                 document.getElementById('btn-update-ok').onclick = () => { 
                     worker.postMessage({ type: 'SKIP_WAITING' }); 
+                    setTimeout(() => { window.location.reload(); }, 500);
                 };
             };
             reg.addEventListener('updatefound', () => {
