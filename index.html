@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V6.9.9 - rev8.2 (Fix Updgrade Procedure) -->
+<!-- BOXING TIMER V6.9.9 - rev8.3 (Fix Updgrade Procedure) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.2">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.3">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9rev8.2</title>
+    <title>BOXING TIMER V6.9.9rev8.3</title>
 
     <style>
         :root { 
@@ -504,7 +504,7 @@
         <div id="settings-main" class="view-container">
             
             <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.9rev8.2)</h3>
+                <h3>PRESET ALLENAMENTO (V6.9.9rev8.3)</h3>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -1312,38 +1312,42 @@
     });
 
 if ('serviceWorker' in navigator) {
-        let isUpdateUIActive = false;
-        
-        // Aggiorna a rev8.2 qui sotto
-        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.2').then(reg => {
-            const showUpdateUI = (worker) => {
-                if (isUpdateUIActive) return;
-                isUpdateUIActive = true;
-                document.getElementById('update-screen').style.display = 'flex';
-                document.getElementById('btn-update-ok').onclick = () => { 
-                    worker.postMessage({ type: 'SKIP_WAITING' }); 
+        // 1. CONTROLLO GUARDIA: Se abbiamo appena aggiornato, resettiamo e usciamo
+        if (sessionStorage.getItem('justUpdated')) {
+            sessionStorage.removeItem('justUpdated');
+            console.log("Aggiornamento completato con successo. Guardia attiva.");
+        } else {
+            let isUpdateUIActive = false;
+            
+            // Aggiorna a rev8.3 qui sotto
+            navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.3').then(reg => {
+                const showUpdateUI = (worker) => {
+                    if (isUpdateUIActive) return;
+                    isUpdateUIActive = true;
+                    document.getElementById('update-screen').style.display = 'flex';
+                    
+                    document.getElementById('btn-update-ok').onclick = () => { 
+                        // 2. SETTIAMO LA GUARDIA: Diciamo alla prossima istanza di stare zitta
+                        sessionStorage.setItem('justUpdated', 'true');
+                        worker.postMessage({ type: 'SKIP_WAITING' }); 
+                    };
                 };
-            };
 
-            // FIX DEFINITIVO: Ritardo di 1 secondo per permettere al browser 
-            // di pulire lo stato del worker dopo un ricaricamento.
-            setTimeout(() => {
-                // Mostriamo l'UI solo se c'è un worker in attesa E l'app è già "sotto controllo"
+                // Controllo immediato se c'è un worker in attesa
                 if (reg.waiting && navigator.serviceWorker.controller) {
                     showUpdateUI(reg.waiting);
                 }
-            }, 1000);
 
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                newWorker.addEventListener('statechange', () => {
-                    // Mostriamo l'UI solo quando il nuovo worker è installato
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        showUpdateUI(newWorker);
-                    }
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateUI(newWorker);
+                        }
+                    });
                 });
             });
-        });
+        }
 
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
