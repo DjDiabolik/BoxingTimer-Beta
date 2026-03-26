@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V6.9.9 - rev8.4 (Fix Updgrade Procedure) -->
+<!-- BOXING TIMER V6.9.9 - rev8 (Fix Updgrade Procedure) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.4">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev8">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9rev8.4</title>
+    <title>BOXING TIMER V6.9.9rev8</title>
 
     <style>
         :root { 
@@ -504,7 +504,7 @@
         <div id="settings-main" class="view-container">
             
             <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.9rev8.4)</h3>
+                <h3>PRESET ALLENAMENTO (V6.9.9rev8)</h3>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -1314,31 +1314,33 @@
 if ('serviceWorker' in navigator) {
         let isUpdateUIActive = false;
 
-        // Registrazione SEMPRE attiva per evitare il blocco della 8.3
-        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.4').then(reg => {
+        // Registrazione rev8
+        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8').then(reg => {
             
             const showUpdateUI = (worker) => {
-                // LA GUARDIA SILENZIOSA: Se abbiamo appena aggiornato, non mostrare l'UI
-                if (sessionStorage.getItem('justUpdated')) {
-                    console.log("Ghost update bloccato.");
-                    sessionStorage.removeItem('justUpdated'); // Pulizia per il prossimo update (8.5)
-                    return;
-                }
-
-                if (isUpdateUIActive) return;
+                // Impedisce l'overlay se non c'è un'app già attiva (primo avvio)
+                if (isUpdateUIActive || !navigator.serviceWorker.controller) return;
                 isUpdateUIActive = true;
                 document.getElementById('update-screen').style.display = 'flex';
                 
                 document.getElementById('btn-update-ok').onclick = () => { 
-                    sessionStorage.setItem('justUpdated', 'true'); // Segna il ricaricamento imminente
                     worker.postMessage({ type: 'SKIP_WAITING' }); 
                 };
             };
 
-            if (reg.waiting) showUpdateUI(reg.waiting);
+            // GHOST GUARD: Se all'avvio c'è un worker in attesa, aspettiamo 3 secondi.
+            // Se è un "fantasma" del ricaricamento, sparirà da solo in questo tempo.
+            // Se è un vero aggiornamento (app riaperta), rimarrà lì e mostreremo l'UI.
+            if (reg.waiting) {
+                setTimeout(() => {
+                    if (reg.waiting) showUpdateUI(reg.waiting);
+                }, 3000);
+            }
 
+            // Gestione nuovi aggiornamenti trovati mentre l'app è aperta
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
+                if (!newWorker) return;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         showUpdateUI(newWorker);
@@ -1347,6 +1349,7 @@ if ('serviceWorker' in navigator) {
             });
         });
 
+        // Gestione ricaricamento atomico
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (refreshing) return;
