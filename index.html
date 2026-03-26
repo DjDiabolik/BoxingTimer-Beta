@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V6.9.9 - rev8 (Fix Updgrade Procedure) -->
+<!-- BOXING TIMER V6.9.9 - rev8.1 (Fix Updgrade Procedure) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev8">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.1">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9rev8</title>
+    <title>BOXING TIMER V6.9.9rev8.1</title>
 
     <style>
         :root { 
@@ -470,15 +470,19 @@
             #round-display, #status-display { font-size: 1.2rem; margin: 0 10px; }
             .controls { padding-bottom: 10px; min-height: 22vh; }
         }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
     </style>
 </head>
 
 <body>
 
-    <div id="update-screen">
-        <h2 id="update-title">AGGIORNAMENTO DISPONIBILE</h2>
-        <p id="update-desc">È stata scaricata una nuova versione.<br>Tocca OK per riavviare l'app.</p>
-        <button id="btn-update-ok">OK</button>
+    <div id="update-notification" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:white; padding:15px 25px; border-radius:50px; z-index:11000; box-shadow:0 4px 15px rgba(0,0,0,0.5); text-align:center; font-weight:bold; pointer-events:none; border: 2px solid rgba(255,255,255,0.3);">
+        Nuova versione disponibile! <span id="update-timer">5</span>...
     </div>
 
     <header class="app-header">
@@ -503,8 +507,13 @@
     <div id="settings-panel">
         <div id="settings-main" class="view-container">
             
-            <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.9rev8)</h3>
+    <div id="section-presets" class="setting-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V6.9.9rev8.1)</h3>
+                    <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
+                        🔄 AGGIORNA ORA
+                    </button>
+                </div>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -1311,45 +1320,63 @@
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
 
-if ('serviceWorker' in navigator) {
-        let isUpdateUIActive = false;
+// --- NUOVA LOGICA DI AGGIORNAMENTO (rev8.1) ---
+    let newWorker;
+    let updateInterval;
 
-        // Registrazione rev8
-        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8').then(reg => {
+    function showUpdateToast() {
+        const toast = document.getElementById('update-notification');
+        const timerSpan = document.getElementById('update-timer');
+        let count = 5;
+        
+        toast.style.display = 'block';
+        if(updateInterval) clearInterval(updateInterval);
+        
+        updateInterval = setInterval(() => {
+            count--;
+            timerSpan.textContent = count;
+            if (count <= 0) {
+                clearInterval(updateInterval);
+                toast.style.display = 'none';
+            }
+        }, 1000);
+    }
+
+    function triggerUpdate() {
+        if (newWorker) {
+            localStorage.removeItem('update_found');
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+        }
+    }
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.1').then(reg => {
             
-            const showUpdateUI = (worker) => {
-                // Impedisce l'overlay se non c'è un'app già attiva (primo avvio)
-                if (isUpdateUIActive || !navigator.serviceWorker.controller) return;
-                isUpdateUIActive = true;
-                document.getElementById('update-screen').style.display = 'flex';
+            const enableUpdateUI = (worker) => {
+                newWorker = worker;
+                const btn = document.getElementById('btn-refresh-app');
+                if (btn) btn.style.display = 'block';
                 
-                document.getElementById('btn-update-ok').onclick = () => { 
-                    worker.postMessage({ type: 'SKIP_WAITING' }); 
-                };
+                if (localStorage.getItem('update_found') !== '1') {
+                    localStorage.setItem('update_found', '1');
+                    showUpdateToast();
+                }
             };
 
-            // GHOST GUARD: Se all'avvio c'è un worker in attesa, aspettiamo 3 secondi.
-            // Se è un "fantasma" del ricaricamento, sparirà da solo in questo tempo.
-            // Se è un vero aggiornamento (app riaperta), rimarrà lì e mostreremo l'UI.
             if (reg.waiting) {
-                setTimeout(() => {
-                    if (reg.waiting) showUpdateUI(reg.waiting);
-                }, 3000);
+                enableUpdateUI(reg.waiting);
             }
 
-            // Gestione nuovi aggiornamenti trovati mentre l'app è aperta
             reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                if (!newWorker) return;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        showUpdateUI(newWorker);
+                const installingWorker = reg.installing;
+                installingWorker.addEventListener('statechange', () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        enableUpdateUI(installingWorker);
                     }
                 });
             });
         });
 
-        // Gestione ricaricamento atomico
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (refreshing) return;
