@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V6.9.9 - rev7 (Fix Settings Lock UI) -->
+<!-- BOXING TIMER V6.9.9 - rev8 (Fix Updgrade Procedure) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev7">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev8">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9</title>
+    <title>BOXING TIMER V6.9.9rev8</title>
 
     <style>
         :root { 
@@ -476,8 +476,8 @@
 <body>
 
     <div id="update-screen">
-        <h2>V6.9.9rev7 DISPONIBILE</h2>
-        <p>Miglioramenti generici UI.<br>Tocca OK per riavviare.</p>
+        <h2 id="update-title">AGGIORNAMENTO DISPONIBILE</h2>
+        <p id="update-desc">È stata scaricata una nuova versione.<br>Tocca OK per riavviare l'app.</p>
         <button id="btn-update-ok">OK</button>
     </div>
 
@@ -504,7 +504,7 @@
         <div id="settings-main" class="view-container">
             
             <div id="section-presets" class="setting-section">
-                <h3>PRESET ALLENAMENTO (V6.9.9rev7)</h3>
+                <h3>PRESET ALLENAMENTO (V6.9.9rev8)</h3>
                 <div id="presets-list"></div>
                 <div id="active-preset-controls" style="display:none; margin-bottom:15px; padding:10px; background:rgba(33, 150, 243, 0.1); border-radius:8px; border:1px dashed var(--accent)">
                     <p style="margin:0 0 10px 0; font-size:0.8rem; color:var(--accent)">Modifiche in: <b id="active-preset-name"></b></p>
@@ -1311,26 +1311,38 @@
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
 
-    if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator) {
         let isUpdateUIActive = false;
-        navigator.serviceWorker.register('./sw.js?v=6.9.9rev7').then(reg => {
+        // Ricordati di cambiare rev7 in rev8 qui sotto
+        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8').then(reg => {
             const showUpdateUI = (worker) => {
                 if (isUpdateUIActive) return;
                 isUpdateUIActive = true;
+                
+                // Mostriamo l'overlay generico
                 document.getElementById('update-screen').style.display = 'flex';
+                
                 document.getElementById('btn-update-ok').onclick = () => { 
                     worker.postMessage({ type: 'SKIP_WAITING' }); 
-                    setTimeout(() => { window.location.reload(); }, 500);
+                    // Il reload avverrà automaticamente tramite l'evento controllerchange sotto
                 };
             };
+
+            // Controlla se c'è già un worker in attesa al caricamento
+            if (reg.waiting) showUpdateUI(reg.waiting);
+
+            // Ascolta l'arrivo di nuovi worker
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateUI(newWorker);
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateUI(newWorker);
+                    }
                 });
             });
-            if (reg.waiting) showUpdateUI(reg.waiting);
         });
+
+        // Gestisce il ricaricamento della pagina una volta che il nuovo SW è attivo
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (refreshing) return; 
