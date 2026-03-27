@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V6.9.9 - rev8.1 (Fix Updgrade Procedure) -->
+<!-- BOXING TIMER V6.9.9 - rev8.2 (Fix Updgrade Procedure) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.1">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.2">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9rev8.1</title>
+    <title>BOXING TIMER V6.9.9rev8.2</title>
 
     <style>
         :root { 
@@ -509,7 +509,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V6.9.9rev8.1)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V6.9.9rev8.2)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -789,7 +789,7 @@
         },
         warning: () => {
             ensureAudio();
-            const now = audioCtx.currentTime;[0, 0.2, 0.4].forEach(off => play(1000, 'sine', 0.15, now + off));
+            const now = audioCtx.currentTime;[0, 0.5, 1.0].forEach(off => play(1000, 'sine', 0.15, now + off));
         },
         speak: (text) => {
             if(!config.voiceEnabled) return;
@@ -1208,11 +1208,12 @@
             btn.textContent = "■ STOP"; 
             let cycle = 0;
             testLoopInterval = setInterval(() => { 
-                if (cycle === 0) audio.tick();
-                else if (cycle === 1) audio.sprint();
-                else audio.gong();
-                cycle = (cycle + 1) % 3;
-            }, 1200); 
+                if (cycle === 0) audio.gong();
+                else if (cycle === 1) audio.tick();
+                else if (cycle === 2) audio.sprint();
+                else audio.warning();
+                cycle = (cycle + 1) % 4;
+            }, 1500); 
         }
     }
 
@@ -1320,7 +1321,7 @@
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
 
-// --- NUOVA LOGICA DI AGGIORNAMENTO (rev8.1) ---
+// --- NUOVA LOGICA DI AGGIORNAMENTO (rev8.2) ---
     let newWorker;
     let updateInterval;
 
@@ -1350,7 +1351,7 @@
     }
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.1').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.2').then(reg => {
             
             const enableUpdateUI = (worker) => {
                 newWorker = worker;
