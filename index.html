@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V6.9.9 - rev8.2 (Fix Updgrade Procedure) -->
+<!-- BOXING TIMER V6.9.9 - rev8.3 (Fix Updgrade Procedure) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.2">
+    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.3">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9rev8.2</title>
+    <title>BOXING TIMER V6.9.9rev8.3</title>
 
     <style>
         :root { 
@@ -509,7 +509,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V6.9.9rev8.2)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V6.9.9rev8.3)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -1321,7 +1321,10 @@
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
 
-// --- NUOVA LOGICA DI AGGIORNAMENTO (rev8.2) ---
+    // --- LOGICA DI AGGIORNAMENTO PROFESSIONALE (rev8.3) ---
+    // Questa variabile deve essere aggiornata manualmente a ogni rilascio
+    const CURRENT_VERSION = '6.9.9rev8.3'; 
+    
     let newWorker;
     let updateInterval;
 
@@ -1345,28 +1348,41 @@
 
     function triggerUpdate() {
         if (newWorker) {
-            localStorage.removeItem('update_found');
+            // Non resettiamo nulla qui, ci pensa il ricaricamento della pagina
             newWorker.postMessage({ type: 'SKIP_WAITING' });
         }
     }
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=6.9.9rev8.2').then(reg => {
+        // Registriamo il worker passando la versione come parametro nell'URL
+        navigator.serviceWorker.register('./sw.js?v=' + CURRENT_VERSION).then(reg => {
             
             const enableUpdateUI = (worker) => {
+                // Recuperiamo la versione dal file sw.js che il browser ha trovato
+                const workerUrl = new URL(worker.scriptURL);
+                const workerVersion = workerUrl.searchParams.get('v');
+
+                // IL CUORE DELLA SOLUZIONE:
+                // Se la versione del worker è identica a quella dell'app, 
+                // significa che è un "fantasma" del ricaricamento. Non fare nulla.
+                if (workerVersion === CURRENT_VERSION) {
+                    return; 
+                }
+
+                // Se arriviamo qui, il worker è davvero una versione diversa (nuova)
                 newWorker = worker;
                 const btn = document.getElementById('btn-refresh-app');
                 if (btn) btn.style.display = 'block';
                 
-                if (localStorage.getItem('update_found') !== '1') {
-                    localStorage.setItem('update_found', '1');
+                // Mostra il toast solo se non abbiamo già avvisato per questa specifica versione
+                if (localStorage.getItem('update_notified_version') !== workerVersion) {
+                    localStorage.setItem('update_notified_version', workerVersion);
                     showUpdateToast();
                 }
             };
 
-            if (reg.waiting) {
-                enableUpdateUI(reg.waiting);
-            }
+            // Controlli standard del Service Worker
+            if (reg.waiting) enableUpdateUI(reg.waiting);
 
             reg.addEventListener('updatefound', () => {
                 const installingWorker = reg.installing;
