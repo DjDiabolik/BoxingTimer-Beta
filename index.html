@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V7.0.5 (Nuovo Metodo Clone/Move Fasi) -->
+<!-- BOXING TIMER V7.0.0 (Nuovo Metodo Clone/Move Fasi) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.5">
+    <link rel="manifest" href="./manifest.json?v=7.0.0">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V7.0.5</title>
+    <title>BOXING TIMER V7.0.0</title>
 
     <style>
         :root { 
@@ -509,7 +509,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.5)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -1015,7 +1015,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.5: Mantiene il focus sulla fase spostata
+        // SMART SCROLL V7.0.0: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1050,7 +1050,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.5: Centra il clone appena creato
+        // SMART SCROLL V7.0.0: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1375,8 +1375,8 @@ function moveP(i, d) {
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
 
-// --- LOGICA DI AGGIORNAMENTO PROFESSIONALE (V7.0.5) ---
-    const CURRENT_VERSION = '7.0.5'; 
+// --- LOGICA DI AGGIORNAMENTO PROFESSIONALE (V7.0.0) ---
+    const CURRENT_VERSION = '7.0.0'; 
     
     let newWorker;
     let updateInterval;
@@ -1407,16 +1407,24 @@ function moveP(i, d) {
     if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js?v=' + CURRENT_VERSION).then(reg => {
         const enableUpdateUI = (worker) => {
-            if (!worker || updateShown) return; // <-- FIX QUI
-            
-            if (navigator.serviceWorker.controller) {
-                updateShown = true; // <-- BLOCCA DOPPIA ESECUZIONE
+            if (!worker) return;
 
-                newWorker = worker;
-                const btn = document.getElementById('btn-refresh-app');
-                if (btn) btn.style.display = 'block';
-                
-                showUpdateToast();
+            // 🔥 Identificatore univoco del worker/versione
+            const workerId = worker.scriptURL;
+
+            // 🔥 Se già gestito, STOP
+            if (sessionStorage.getItem('handledWorker') === workerId) return;
+
+            if (navigator.serviceWorker.controller) {
+            // 🔥 segna questo worker come già gestito
+            sessionStorage.setItem('handledWorker', workerId);
+
+            newWorker = worker;
+
+            const btn = document.getElementById('btn-refresh-app');
+            if (btn) btn.style.display = 'block';
+
+            showUpdateToast();
             }
         };
 
