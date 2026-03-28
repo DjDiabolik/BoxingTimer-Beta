@@ -3,10 +3,10 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=6.9.9rev8.3">
+    <link rel="manifest" href="./manifest.json?v=7.0.0">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V6.9.9rev8.3</title>
+    <title>BOXING TIMER V7.0.0</title>
 
     <style>
         :root { 
@@ -509,7 +509,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V6.9.9rev8.3)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -1007,19 +1007,61 @@
         renderPhases(); save(); calculateTotals();
     }
 
-    function moveP(i, d) {[config.phases[i], config.phases[i+d]] = [config.phases[i+d], config.phases[i]]; 
-        save(); renderPhases(); 
+function moveP(i, d) {
+        const newIdx = i + d;
+        if (newIdx < 0 || newIdx >= config.phases.length) return;
+        
+        [config.phases[i], config.phases[newIdx]] = [config.phases[newIdx], config.phases[i]]; 
+        save(); 
+        renderPhases(); 
+
+        // SMART SCROLL V7.0.0: Mantiene il focus sulla fase spostata
+        const container = document.getElementById("phases-list");
+        const target = container.children[newIdx];
+        if (target) {
+            // 'instant' permette click a raffica senza perdere il focus
+            target.scrollIntoView({ block: 'center', behavior: 'instant' });
+            // Feedback visivo: highlight temporaneo blu accent
+            target.style.outline = "2px solid var(--accent)";
+            target.style.boxShadow = "0 0 15px var(--accent)";
+            setTimeout(() => {
+                target.style.outline = "none";
+                target.style.boxShadow = "none";
+            }, 300);
+        }
     }
 
     function addPhase() { 
         config.phases.push({type:'fight', dur:60, label: '', random:{active:false, min:5, max:10}}); 
-        save(); renderPhases(); 
+        save(); 
+        renderPhases(); 
+        
+        // Scroll fluido verso la nuova fase in fondo
+        const container = document.getElementById("phases-list");
+        if (container.lastElementChild) {
+            container.lastElementChild.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
     }
 
     function clonePhase(idx) { 
         const cloned = JSON.parse(JSON.stringify(config.phases[idx])); 
-        config.phases.splice(idx + 1, 0, cloned); 
-        save(); renderPhases(); 
+        const newIdx = idx + 1;
+        config.phases.splice(newIdx, 0, cloned); 
+        save(); 
+        renderPhases(); 
+
+        // SMART SCROLL V7.0.0: Centra il clone appena creato
+        const container = document.getElementById("phases-list");
+        const target = container.children[newIdx];
+        if (target) {
+            target.scrollIntoView({ block: 'center', behavior: 'instant' });
+            target.style.outline = "2px solid var(--accent)";
+            target.style.boxShadow = "0 0 15px var(--accent)";
+            setTimeout(() => {
+                target.style.outline = "none";
+                target.style.boxShadow = "none";
+            }, 300);
+        }
     }
 
     function renderPresets() {
@@ -1323,7 +1365,7 @@
 
     // --- LOGICA DI AGGIORNAMENTO PROFESSIONALE (rev8.3) ---
     // Questa variabile deve essere aggiornata manualmente a ogni rilascio
-    const CURRENT_VERSION = '6.9.9rev8.3'; 
+    const CURRENT_VERSION = '7.0.0'; 
     
     let newWorker;
     let updateInterval;
