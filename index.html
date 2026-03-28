@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V7.0.0rev5 (Nuovo Metodo Clone/Move Fasi) -->
+<!-- BOXING TIMER V7.0.0rev6 (Nuovo Metodo Clone/Move Fasi) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0rev5">
+    <link rel="manifest" href="./manifest.json?v=7.0.0rev6">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V7.0.0rev5</title>
+    <title>BOXING TIMER V7.0.0rev6</title>
 
     <style>
         :root { 
@@ -509,7 +509,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0rev5)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0rev6)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -1015,7 +1015,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.0rev5: Mantiene il focus sulla fase spostata
+        // SMART SCROLL V7.0.0rev6: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1050,7 +1050,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.0rev5: Centra il clone appena creato
+        // SMART SCROLL V7.0.0rev6: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1319,6 +1319,10 @@ function moveP(i, d) {
     }
 
     function toggleSettings() { 
+        // TRIGGER AGGIORNAMENTO (Sveglia il worker quando apri le impostazioni)
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then(reg => { reg.update(); });
+        }
         const s = document.getElementById("settings-panel"); 
         if (s.style.display === 'flex') { 
             s.style.display = 'none'; 
@@ -1363,8 +1367,8 @@ function moveP(i, d) {
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
     });
 
-// --- LOGICA DI AGGIORNAMENTO PROFESSIONALE (rev7.0.0rev5 - FIXED) ---
-    const CURRENT_VERSION = '7.0.0rev5'; 
+    // --- LOGICA DI AGGIORNAMENTO PROFESSIONALE (rev7.0.0rev6) ---
+    const CURRENT_VERSION = '7.0.0rev6'; 
     
     let newWorker;
     let updateInterval;
@@ -1373,10 +1377,8 @@ function moveP(i, d) {
         const toast = document.getElementById('update-notification');
         const timerSpan = document.getElementById('update-timer');
         let count = 5;
-        
         toast.style.display = 'block';
         if(updateInterval) clearInterval(updateInterval);
-        
         updateInterval = setInterval(() => {
             count--;
             timerSpan.textContent = count;
@@ -1395,49 +1397,37 @@ function moveP(i, d) {
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js?v=' + CURRENT_VERSION).then(reg => {
-            
             const enableUpdateUI = (worker) => {
                 if (!worker) return;
-
-                // Rimosso il blocco "Version Lock": se il browser ci invia un worker 
-                // in stato 'waiting' o 'installing', è per definizione un aggiornamento.
-                newWorker = worker;
-                
-                // Attiva pulsante in impostazioni
-                const btn = document.getElementById('btn-refresh-app');
-                if (btn) btn.style.display = 'block';
-                
-                // Gestione Toast con protezione da ripetizioni (basata sulla versione del worker)
-                let workerVersion = 'unknown';
+                let workerVersion = null;
                 try {
                     const url = new URL(worker.scriptURL, window.location.href);
-                    workerVersion = url.searchParams.get('v') || 'unknown';
-                } catch(e) {}
+                    workerVersion = url.searchParams.get('v');
+                } catch (e) {}
 
-                const storageKey = 'notified_' + workerVersion;
+                // GHOST GUARD: Impedisce alla pagina di rilevare se stessa come aggiornamento
+                if (workerVersion && workerVersion === CURRENT_VERSION) return; 
+
+                newWorker = worker;
+                const btn = document.getElementById('btn-refresh-app');
+                if (btn) btn.style.display = 'block';
+                const storageKey = 'notified_' + (workerVersion || 'unknown');
                 if (localStorage.getItem(storageKey) !== 'true') {
                     localStorage.setItem(storageKey, 'true');
                     showUpdateToast();
                 }
             };
-
-            // 1. Controlla se c'è già un aggiornamento in attesa (es. caricato in una sessione precedente)
             if (reg.waiting) enableUpdateUI(reg.waiting);
-
-            // 2. Resta in ascolto per nuovi aggiornamenti trovati durante questa sessione
             reg.addEventListener('updatefound', () => {
                 const installingWorker = reg.installing;
                 if (!installingWorker) return;
                 installingWorker.addEventListener('statechange', () => {
-                    // Mostriamo la UI solo quando il worker è completamente scaricato (installed)
                     if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         enableUpdateUI(installingWorker);
                     }
                 });
             });
         });
-
-        // 3. Reload automatico quando il nuovo worker prende il controllo
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (refreshing) return;
