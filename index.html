@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V7.0.0rev4 (Nuovo Metodo Clone/Move Fasi) -->
+<!-- BOXING TIMER V7.0.0rev5 (Nuovo Metodo Clone/Move Fasi) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0rev4">
+    <link rel="manifest" href="./manifest.json?v=7.0.0rev5">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V7.0.0rev4</title>
+    <title>BOXING TIMER V7.0.0rev5</title>
 
     <style>
         :root { 
@@ -45,38 +45,6 @@
 
         body.fight-mode { background: var(--fight); }
         body.rest-mode { background: var(--rest); }
-
-        /* Update Overlay */
-        #update-screen { 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,0.98); 
-            z-index: 10000; 
-            display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center; 
-            padding: 30px; 
-            gap: 20px;
-        }
-
-        #btn-update-ok { 
-            background: var(--accent); 
-            color: white; 
-            border: none; 
-            padding: 20px 60px; 
-            border-radius: 15px; 
-            font-size: 1.5rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            /* Fix per espansione verticale anomala */
-            flex: 0 0 auto; 
-            height: fit-content;
-            min-height: 60px;
-            max-width: 90%;
-            line-height: 1.2;
-        }
 
         /* Header */
         .app-header { 
@@ -509,7 +477,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0rev4)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0rev5)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -720,7 +688,7 @@
 
     // Ripristina il lock se l'app torna visibile
     document.addEventListener('visibilitychange', async () => {
-        if (wakeLock !== null && document.visibilityState === 'visible') {
+        if (document.visibilityState === 'visible' && state.isRunning) {
             await requestWakeLock();
         }
     });
@@ -1015,7 +983,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.0rev4: Mantiene il focus sulla fase spostata
+        // SMART SCROLL V7.0.0rev5: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1050,7 +1018,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.0rev4: Centra il clone appena creato
+        // SMART SCROLL V7.0.0rev5: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1079,7 +1047,7 @@ function moveP(i, d) {
             c.appendChild(d);
         }
     }
-
+    
     function applyP(n) { 
         state.lastLoadedPreset = n; 
         config = JSON.parse(JSON.stringify(presets[n])); 
@@ -1358,6 +1326,7 @@ function moveP(i, d) {
     // --- INITIALIZE ---
     load(); 
     initTimer();
+    requestWakeLock();
     
     window.addEventListener('load', () => { 
         setTimeout(() => { window.scrollTo(0, 0); document.body.style.height = '100dvh'; }, 100); 
