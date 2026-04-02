@@ -1,12 +1,12 @@
-<!-- BOXING TIMER V7.0.0rev5 (Nuovo Metodo Clone/Move Fasi) -->
+<!-- BOXING TIMER v7.0.0rev6 (Nuovo Metodo Clone/Move Fasi) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0rev5">
+    <link rel="manifest" href="./manifest.json?v=7.0.0">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER V7.0.0rev5</title>
+    <title>BOXING TIMER v7.0.0rev6</title>
 
     <style>
         :root { 
@@ -336,10 +336,11 @@
             display: flex; 
             align-items: center; 
             justify-content: space-between; 
+            gap: 12px; /* Aggiunto spazio di sicurezza tra pulsante e input */
             border-top: 1px solid #333; 
             font-size: 0.8rem; 
         }
-
+        
         .random-toggle-btn { 
             padding: 6px 10px; 
             border-radius: 4px; 
@@ -477,7 +478,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (V7.0.0rev5)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev6)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -983,7 +984,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.0rev5: Mantiene il focus sulla fase spostata
+        // SMART SCROLL v7.0.0rev6: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1018,7 +1019,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL V7.0.0rev5: Centra il clone appena creato
+        // SMART SCROLL v7.0.0rev6: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
