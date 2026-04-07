@@ -1,9 +1,10 @@
-// /sw.js - v7.0.0rev6
-const CACHE_NAME = 'boxing-timer-v7.0.0rev6';
+// /sw.js - v7.0.0rev7
+const CACHE_NAME = 'boxing-timer-v7.0.0rev7';
 
 const ASSETS = [
   './',
   './index.html',
+  './tutorial.html',   // <-- nuovo file
   './icon.png',
   './maskable_icon_x192.png',
   './maskable_icon_x512.png',

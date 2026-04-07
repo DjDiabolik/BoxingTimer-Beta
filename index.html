@@ -1,12 +1,12 @@
-<!-- BOXING TIMER v7.0.0rev6 (Nuovo Metodo Clone/Move Fasi) -->
+<!-- BOXING TIMER v7.0.0rev7 (Aggiunto Tutorial del Timer) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0">
+    <link rel="manifest" href="./manifest.json?v=7.0.0rev7">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER v7.0.0rev6</title>
+    <title>BOXING TIMER v7.0.0rev7</title>
 
     <style>
         :root { 
@@ -478,7 +478,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev6)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev7)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -515,6 +515,10 @@
 
             <button onclick="openLab()" style="background:transparent; border:2px solid var(--accent); width:100%; padding:15px; font-size:1rem; border-radius:12px; color:var(--accent); font-weight:bold; margin-bottom:15px;">
                 🧪 LABORATORIO (Volume e Suoni)
+            </button>
+            
+            <button id="btn-tutorial-settings" style="background:transparent; border:2px solid var(--accent); width:100%; padding:15px; font-size:1rem; border-radius:12px; color:var(--accent); font-weight:bold; margin-bottom:15px;">
+                🎓 TUTORIAL INTERATTIVO
             </button>
 
             <button onclick="toggleSettings()" style="background:var(--accent); width:100%; padding:20px; font-size:1.2rem; border:none; border-radius:12px; color:white; font-weight:bold">CHIUDI E APPLICA</button>
@@ -601,6 +605,11 @@
             </button>
         </div>
     </div>
+    
+    <!-- MODALE TUTORIAL -->
+    <dialog id="tutorial-modal" style="background:#1e1e1e; color:white; border-radius:20px; padding:0; max-width:90vw; width:500px; border:none; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <div id="tutorial-content"></div>
+    </dialog>
 
 <script>
     // --- LOGICA CORE ---
@@ -984,7 +993,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev6: Mantiene il focus sulla fase spostata
+        // SMART SCROLL v7.0.0rev7: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1019,7 +1028,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev6: Centra il clone appena creato
+        // SMART SCROLL v7.0.0rev7: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1404,6 +1413,42 @@ function moveP(i, d) {
 
         }).catch(err => console.error("Errore SW:", err));
     }
+    
+        // --- TUTORIAL INTERATTIVO (caricato da file esterno) ---
+    const tutorialModal = document.getElementById('tutorial-modal');
+    const tutorialContent = document.getElementById('tutorial-content');
+
+    async function loadTutorial() {
+        try {
+            const response = await fetch('./tutorial.html');
+            const html = await response.text();
+            tutorialContent.innerHTML = html;
+            
+            const scripts = tutorialContent.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                } else {
+                    newScript.textContent = oldScript.textContent;
+                }
+                document.body.appendChild(newScript);
+                oldScript.remove();
+            });
+            
+            tutorialModal.showModal();
+        } catch (err) {
+            console.error('Errore nel caricamento del tutorial:', err);
+            alert('Impossibile caricare il tutorial. Verifica la connessione.');
+        }
+    }
+
+    document.getElementById('btn-tutorial-settings').addEventListener('click', loadTutorial);
+
+    tutorialModal.addEventListener('click', (e) => {
+        if (e.target === tutorialModal) tutorialModal.close();
+    });
+    
 </script>
 </body>
 </html>
