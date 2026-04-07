@@ -186,12 +186,10 @@
             document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderStep();
-            document.getElementById('next-btn').addEventListener('click', nextStep);
-            document.getElementById('prev-btn').addEventListener('click', prevStep);
-            document.getElementById('close-btn').addEventListener('click', closeTutorial);
-        });
+        renderStep();
+        document.getElementById('next-btn').addEventListener('click', nextStep);
+        document.getElementById('prev-btn').addEventListener('click', prevStep);
+        document.getElementById('close-btn').addEventListener('click', closeTutorial);
     </script>
 </body>
 </html>
