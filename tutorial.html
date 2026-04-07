@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tutorial Boxing Timer</title>
+    <title>Tutorial - Boxing Timer</title>
     <style>
         * {
             margin: 0;
@@ -11,185 +11,182 @@
             box-sizing: border-box;
         }
         body {
-            font-family: system-ui, sans-serif;
-            background: #1e1e1e;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #121212;
             color: white;
             padding: 20px;
+            line-height: 1.5;
         }
-        .step {
-            margin-bottom: 25px;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
         }
-        .step-title {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #2196F3;
-            margin-bottom: 10px;
-        }
-        .step-desc {
-            font-size: 1rem;
-            line-height: 1.4;
-            margin-bottom: 15px;
-            background: #2a2a2a;
-            padding: 12px;
-            border-radius: 12px;
-        }
-        .step-demo {
-            background: #333;
-            border-radius: 12px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 0.9rem;
+        h1 {
+            font-size: 1.8rem;
             text-align: center;
+            color: #2196F3;
+            margin-bottom: 20px;
         }
-        button {
-            background: #2196F3;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-weight: bold;
-            color: white;
-            margin-top: 10px;
-            cursor: pointer;
+        .card {
+            background: #1e1e1e;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #333;
         }
-        .nav-buttons {
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #2196F3;
             display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
+            align-items: center;
+            gap: 10px;
         }
-        .highlight {
-            animation: pulse 0.5s ease-in-out 3;
-            box-shadow: 0 0 0 4px #ff9800;
-            border-radius: 12px;
+        .demo-controls {
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 15px;
+            margin: 15px 0;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 #ff9800; }
-            70% { box-shadow: 0 0 0 10px rgba(255,152,0,0); }
-            100% { box-shadow: 0 0 0 0 rgba(255,152,0,0); }
+        /* Replica stili pulsanti originali (non interattivi) */
+        .mock-btn {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(5px);
+            padding: 12px 20px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1rem;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: default;
+            pointer-events: none;
+        }
+        .mock-start {
+            background: #2196F3;
+            flex: 2;
+            min-width: 100px;
+        }
+        .mock-skip {
+            background: rgba(255,255,255,0.1);
+        }
+        .mock-reset {
+            background: rgba(255,255,255,0.1);
+        }
+        .mock-phase {
+            background: #2e7d32;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .mock-rest {
+            background: #d32f2f;
+        }
+        .badge {
+            background: #333;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        .note {
+            background: #2a2a2a;
+            border-left: 4px solid #ff9800;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        hr {
+            border-color: #333;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 30px;
         }
     </style>
 </head>
 <body>
-    <div id="tutorial-steps"></div>
-    <div class="nav-buttons">
-        <button id="prev-btn" disabled>◀ Indietro</button>
-        <button id="next-btn">Avanti ▶</button>
-        <button id="close-btn">Chiudi</button>
+<div class="container">
+    <h1>🥊 GUIDA AL BOXING TIMER</h1>
+
+    <div class="card">
+        <h2>⏯️ Controlli principali</h2>
+        <div class="demo-controls">
+            <div class="mock-btn mock-skip">⏮</div>
+            <div class="mock-btn mock-start">START / PAUSA</div>
+            <div class="mock-btn mock-skip">⏭</div>
+            <div class="mock-btn mock-reset">RESET</div>
+        </div>
+        <p><strong>START/PAUSA</strong> – Avvia o mette in pausa il timer. Durante l'esecuzione, lo sfondo cambia colore (verde per LAVORO, rosso per RIPOSO).<br>
+        <strong>⏮ / ⏭</strong> – Saltano alla fase precedente o successiva.<br>
+        <strong>RESET</strong> – Ferma il timer e riporta all'inizio della sequenza.</p>
     </div>
 
-    <script>
-        // Lista degli step – modifica i testi a tuo piacimento
-        const steps = [
-            {
-                title: "Benvenuto!",
-                desc: "Questo tutorial ti guiderà attraverso le principali funzionalità del Boxing Timer. Premi 'Avanti' per iniziare.",
-                demo: null,
-                highlightSelector: null
-            },
-            {
-                title: "START / PAUSA",
-                desc: "Il grande pulsante centrale avvia il timer. Durante l'esecuzione, diventa 'PAUSA' per fermarlo. Se il timer è in pausa, puoi riprenderlo con lo stesso tasto.",
-                demo: "Prova a premere START ora (si fermerà dopo 3 secondi automaticamente).",
-                highlightSelector: "#btn-toggle"
-            },
-            {
-                title: "Skip Avanti e Indietro",
-                desc: "Usa ⏮ e ⏭ per saltare alla fase precedente o successiva. Utile per testare rapidamente la struttura del tuo allenamento.",
-                highlightSelector: ".btn-skip"
-            },
-            {
-                title: "RESET",
-                desc: "Il pulsante RESET ferma il timer e riporta tutto all'inizio della sequenza.",
-                highlightSelector: "button[onclick='resetTimer()']"
-            },
-            {
-                title: "Fasi di Lavoro e Riposo",
-                desc: "Puoi creare fasi personalizzate. Ogni fase può essere di tipo LAVORO (sfondo verde) o RIPOSO (sfondo rosso).",
-                highlightSelector: ".type-toggle"
-            },
-            {
-                title: "Scatti Casuali (Sprint)",
-                desc: "Nelle fasi LAVORO, attivando 'SCATTI ON' sentirai un suono a tempo casuale nel range di secondi specificato nei due valori a destra.",
-                highlightSelector: ".random-toggle-btn"
-            },
-            {
-                title: "Avviso nei Riposi",
-                desc: "Nelle fasi RIPOSO, attivando 'FUORI SECONDI ON' sentirai un warning a 10 secondi e dei tick negli ultimi 3 secondi.",
-                highlightSelector: ".random-toggle-btn"
-            },
-            {
-                title: "Preset di Allenamento",
-                desc: "Salva la tua configurazione come Preset, caricali in seguito, esportali o importali. Apri le Impostazioni (⚙️) per gestirli.",
-                highlightSelector: "#settings-btn"
-            },
-            {
-                title: "Laboratorio (Suoni e Colori)",
-                desc: "Sempre nelle Impostazioni, trovi il 'Laboratorio' dove puoi cambiare volume, suoni (gong, tick, sprint), colori e attivare la voce.",
-                highlightSelector: "#settings-btn"
-            },
-            {
-                title: "Tutorial Completato!",
-                desc: "Ora sai tutto l'essenziale. Puoi riavviare il tutorial quando vuoi dal pulsante nelle impostazioni. Buon allenamento! 🥊",
-                demo: null,
-                highlightSelector: null
-            }
-        ];
+    <div class="card">
+        <h2>⚙️ Impostazioni e struttura</h2>
+        <p>Clicca sull'icona <strong>⚙️</strong> in alto a destra per aprire il pannello.</p>
+        <p>Qui puoi:</p>
+        <ul style="margin-left: 20px; margin-bottom: 10px;">
+            <li><strong>Gestire le fasi</strong>: aggiungi, clona, elimina, sposta su/giù, imposta durata ed etichetta personalizzata.</li>
+            <li><strong>Tipo fase</strong>: ogni fase può essere LAVORO (sfondo verde) o RIPOSO (sfondo rosso).</li>
+            <li><strong>Scatti casuali (solo LAVORO)</strong>: attivando "SCATTI ON" sentirai un suono a tempo casuale nel range di secondi impostato.</li>
+            <li><strong>Avviso fine riposo (solo RIPOSO)</strong>: attivando "FUORI SECONDI ON" sentirai un warning a 10 secondi e tick negli ultimi 3 secondi.</li>
+        </ul>
+        <div class="demo-controls" style="justify-content: flex-start;">
+            <div class="mock-btn mock-phase">LAVORO</div>
+            <div class="mock-btn mock-phase mock-rest">RIPOSO</div>
+            <div class="badge">⚡ SCATTI ON</div>
+            <div class="badge">🔔 FUORI SECONDI ON</div>
+        </div>
+    </div>
 
-        let currentStep = 0;
+    <div class="card">
+        <h2>💾 Preset di allenamento</h2>
+        <p>Salva la configurazione corrente come Preset con un nome, carica preset salvati, rinominali, esportali o importali. Puoi fare un backup completo di tutti i preset e delle impostazioni.</p>
+        <div class="demo-controls" style="justify-content: flex-start;">
+            <div class="badge">💾 SALVA</div>
+            <div class="badge">📂 CARICA</div>
+            <div class="badge">⬇ BACKUP</div>
+            <div class="badge">⬆ IMPORTA</div>
+        </div>
+    </div>
 
-        function renderStep() {
-            const step = steps[currentStep];
-            const container = document.getElementById('tutorial-steps');
-            container.innerHTML = `
-                <div class="step">
-                    <div class="step-title">Step ${currentStep+1}/${steps.length}: ${step.title}</div>
-                    <div class="step-desc">${step.desc}</div>
-                    ${step.demo ? `<div class="step-demo">💡 ${step.demo}</div>` : ''}
-                </div>
-            `;
+    <div class="card">
+        <h2>🧪 Laboratorio (suoni e colori)</h2>
+        <p>Nel pannello impostazioni, clicca su "LABORATORIO" per:</p>
+        <ul style="margin-left: 20px;">
+            <li>Regolare il volume master e testare i suoni in loop.</li>
+            <li>Cambiare il tipo d’onda e la frequenza di Gong, Tick e Scatto.</li>
+            <li>Modificare i colori di sfondo per le fasi LAVORO e RIPOSO.</li>
+            <li>Attivare la sintesi vocale (annuncia "Round X" o "Riposo").</li>
+        </ul>
+        <div class="note">
+            💡 <strong>Suggerimento</strong>: Il timer funziona anche in background e mantiene lo schermo acceso grazie alla Wake Lock API.
+        </div>
+    </div>
 
-            // Rimuovi eventuali highlight precedenti
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-            
-            if (step.highlightSelector) {
-                try {
-                    const target = window.parent.document.querySelector(step.highlightSelector);
-                    if (target) {
-                        target.classList.add('highlight');
-                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                } catch(e) { console.warn(e); }
-            }
+    <div class="card">
+        <h2>📱 Altre funzioni</h2>
+        <p><strong>FULLSCREEN</strong> – Ingrandisce il timer a tutto schermo.<br>
+        <strong>Timer totale</strong> – In alto viene mostrato il tempo accumulato della sessione.<br>
+        <strong>Round</strong> – Il numero di round incrementa automaticamente al termine di ogni ciclo di fasi.</p>
+        <p>L'app è una PWA: puoi installarla sul telefono e usarla offline. Gli aggiornamenti vengono rilevati automaticamente.</p>
+    </div>
 
-            document.getElementById('prev-btn').disabled = currentStep === 0;
-            document.getElementById('next-btn').textContent = currentStep === steps.length-1 ? "Fine" : "Avanti ▶";
-        }
-
-        function nextStep() {
-            if (currentStep < steps.length - 1) {
-                currentStep++;
-                renderStep();
-            } else {
-                window.parent.document.getElementById('tutorial-modal').close();
-                document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-            }
-        }
-
-        function prevStep() {
-            if (currentStep > 0) {
-                currentStep--;
-                renderStep();
-            }
-        }
-
-        function closeTutorial() {
-            window.parent.document.getElementById('tutorial-modal').close();
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-        }
-
-        renderStep();
-        document.getElementById('next-btn').addEventListener('click', nextStep);
-        document.getElementById('prev-btn').addEventListener('click', prevStep);
-        document.getElementById('close-btn').addEventListener('click', closeTutorial);
-    </script>
+    <div class="footer">
+        Boxing Timer v7.0.0rev9 – Allenati con disciplina 💪
+    </div>
+</div>
 </body>
 </html>
