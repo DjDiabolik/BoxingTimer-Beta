@@ -1,5 +1,5 @@
-// /sw.js - v7.0.0rev9
-const CACHE_NAME = 'boxing-timer-v7.0.0rev9';
+// /sw.js - v7.0.0rev10
+const CACHE_NAME = 'boxing-timer-v7.0.0rev10';
 
 const ASSETS = [
   './',

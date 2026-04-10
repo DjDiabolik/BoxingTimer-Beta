@@ -1,12 +1,12 @@
-<!-- BOXING TIMER v7.0.0rev9 (Aggiunto Tutorial del Timer) -->
+<!-- BOXING TIMER v7.0.0rev10 (Aggiunto Tutorial del Timer) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0rev9">
+    <link rel="manifest" href="./manifest.json?v=7.0.0rev10">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER v7.0.0rev9</title>
+    <title>BOXING TIMER v7.0.0rev10</title>
 
     <style>
         :root { 
@@ -478,7 +478,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev9)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev10)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -646,6 +646,8 @@
     };
 
     let audioCtx, masterGain, compressor, wakeLock, testLoopInterval;
+    let gongDebounceTimer = null;                // 👈 NUOVO
+    const GONG_DEBOUNCE_DELAY = 250;             // 👈 NUOVO (millisecondi)
 
     // Web Worker per precisione timer
     const workerCode = `
@@ -789,6 +791,11 @@
             timerWorker.postMessage('stop'); 
             btn.textContent = "RIPRENDI"; 
         } else {
+            // 👇 NUOVO: cancella eventuale gong in attesa da skip precedenti
+            if (gongDebounceTimer) {
+                clearTimeout(gongDebounceTimer);
+                gongDebounceTimer = null;
+            }            
             state.isRunning = true; 
             state.lastTickTimestamp = Date.now();
             timerWorker.postMessage('start'); 
@@ -870,8 +877,12 @@
     function skipNext() {
         ensureAudio(); 
         if (state.isRunning) {
-            audio.gong();
-            state.gongJustPlayed = true;
+            if (gongDebounceTimer) clearTimeout(gongDebounceTimer);
+            gongDebounceTimer = setTimeout(() => {
+                audio.gong();
+                state.gongJustPlayed = true;   // 👈 spostato qui dentro
+                gongDebounceTimer = null;
+            }, GONG_DEBOUNCE_DELAY);
         }
         
         state.phaseIndex++;
@@ -891,8 +902,12 @@
     function skipPrev() {
         ensureAudio(); 
         if (state.isRunning) {
-            audio.gong();
-            state.gongJustPlayed = true;
+            if (gongDebounceTimer) clearTimeout(gongDebounceTimer);
+            gongDebounceTimer = setTimeout(() => {
+                audio.gong();
+                state.gongJustPlayed = true;
+                gongDebounceTimer = null;
+            }, GONG_DEBOUNCE_DELAY);
         }
         
         const currentPhaseDur = state.sessionPhases[state.phaseIndex].dur;
@@ -919,7 +934,12 @@
         updateUI();
     }
 
-    function resetTimer() { 
+    function resetTimer() {
+        // 👇 NUOVO: cancella eventuale gong in attesa
+        if (gongDebounceTimer) {
+            clearTimeout(gongDebounceTimer);
+            gongDebounceTimer = null;
+        }     
         state.isRunning = false; 
         initTimer(); 
     }
@@ -993,7 +1013,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev9: Mantiene il focus sulla fase spostata
+        // SMART SCROLL v7.0.0rev10: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1028,7 +1048,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev9: Centra il clone appena creato
+        // SMART SCROLL v7.0.0rev10: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
