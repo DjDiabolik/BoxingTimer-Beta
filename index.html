@@ -1,12 +1,12 @@
-<!-- BOXING TIMER v7.0.0rev10 (Aggiunto Tutorial del Timer) -->
+<!-- BOXING TIMER v7.0.0rev11 (Aggiunto Tutorial del Timer) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0rev10">
+    <link rel="manifest" href="./manifest.json?v=7.0.0rev11">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER v7.0.0rev10</title>
+    <title>BOXING TIMER v7.0.0rev11</title>
 
     <style>
         :root { 
@@ -136,13 +136,17 @@
             border-radius: 15px; 
             color: white; 
             font-weight: bold; 
-            background: rgba(255,255,255,.15); 
-            backdrop-filter: blur(5px); 
+            background: #333; 
             cursor: pointer; 
             display: flex;
             align-items: center;
             justify-content: center;
             flex: 1;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            background: #444;
         }
 
         button:disabled { 
@@ -153,13 +157,13 @@
 
         #btn-toggle { 
             background: var(--accent); 
-            flex: 2.5; /* Più largo degli altri */
+            flex: 2.5; 
             font-size: clamp(1.3rem, 4vw, 2.4rem); 
         }
 
         .btn-skip { 
             font-size: clamp(1.3rem, 3vw, 2rem); 
-            background: rgba(255,255,255,0.1); 
+            background: #444; 
         }
 
         /* Settings Panel */
@@ -478,7 +482,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev10)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev11)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -850,7 +854,8 @@
                 nextPh(); 
             }
         }
-        updateUI();
+        // Sostituito updateUI() con requestAnimationFrame(updateUI)
+        requestAnimationFrame(updateUI);
     }
 
     function nextPh() {
@@ -1013,7 +1018,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev10: Mantiene il focus sulla fase spostata
+        // SMART SCROLL v7.0.0rev11: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1048,7 +1053,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev10: Centra il clone appena creato
+        // SMART SCROLL v7.0.0rev11: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1288,10 +1293,25 @@ function moveP(i, d) {
 
     function updateUI() {
         const m = Math.floor(state.timeLeft/60), s = state.timeLeft%60;
-        document.getElementById("time-display").textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const timeStr = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const timeDisplay = document.getElementById("time-display");
+        // Cambia il testo solo se è diverso da quello attuale
+        if (timeDisplay.textContent !== timeStr) {
+            timeDisplay.textContent = timeStr;
+        }
+
         const tm = Math.floor(state.totalTime/60), ts = state.totalTime%60;
-        document.getElementById("total-time").textContent = `${String(tm).padStart(2,'0')}:${String(ts).padStart(2,'0')}`;
-        document.getElementById("round-display").textContent = `ROUND ${state.currentRound}`;
+        const totalStr = `${String(tm).padStart(2,'0')}:${String(ts).padStart(2,'0')}`;
+        const totalDisplay = document.getElementById("total-time");
+        if (totalDisplay.textContent !== totalStr) {
+            totalDisplay.textContent = totalStr;
+        }
+
+        const roundStr = `ROUND ${state.currentRound}`;
+        const roundDisplay = document.getElementById("round-display");
+        if (roundDisplay.textContent !== roundStr) {
+            roundDisplay.textContent = roundStr;
+        }
     }
 
     function updateTheme() {
@@ -1434,11 +1454,17 @@ function moveP(i, d) {
         }).catch(err => console.error("Errore SW:", err));
     }
     
-        // --- TUTORIAL INTERATTIVO (caricato da file esterno) ---
+// --- TUTORIAL INTERATTIVO (Ottimizzato per evitare DOM Overhead) ---
     const tutorialModal = document.getElementById('tutorial-modal');
     const tutorialContent = document.getElementById('tutorial-content');
+    let isTutorialLoaded = false; // Flag di controllo
 
     async function loadTutorial() {
+        if (isTutorialLoaded) {
+            tutorialModal.showModal();
+            return;
+        }
+
         try {
             const response = await fetch('./tutorial.html');
             const html = await response.text();
@@ -1456,6 +1482,7 @@ function moveP(i, d) {
                 oldScript.remove();
             });
             
+            isTutorialLoaded = true; // Segna come caricato
             tutorialModal.showModal();
         } catch (err) {
             console.error('Errore nel caricamento del tutorial:', err);
