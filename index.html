@@ -1,12 +1,12 @@
-<!-- BOXING TIMER v7.0.0rev11 (Aggiunto Tutorial del Timer) -->
+<!-- BOXING TIMER v7.0.0rev12 (Aggiunto Tutorial del Timer) -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="./manifest.json?v=7.0.0rev11">
+    <link rel="manifest" href="./manifest.json?v=7.0.0rev12">
     <link rel="icon" type="image/png" href="./maskable_icon_x192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BOXING TIMER v7.0.0rev11</title>
+    <title>BOXING TIMER v7.0.0rev12</title>
 
     <style>
         :root { 
@@ -482,7 +482,7 @@
             
     <div id="section-presets" class="setting-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev11)</h3>
+                    <h3 style="margin:0">PRESET ALLENAMENTO (v7.0.0rev12)</h3>
                     <button id="btn-refresh-app" onclick="triggerUpdate()" style="display:none; background:#ff9800; color:black; border:none; padding:8px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; animation: pulse 2s infinite;">
                         🔄 AGGIORNA ORA
                     </button>
@@ -1018,7 +1018,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev11: Mantiene il focus sulla fase spostata
+        // SMART SCROLL v7.0.0rev12: Mantiene il focus sulla fase spostata
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1053,7 +1053,7 @@ function moveP(i, d) {
         save(); 
         renderPhases(); 
 
-        // SMART SCROLL v7.0.0rev11: Centra il clone appena creato
+        // SMART SCROLL v7.0.0rev12: Centra il clone appena creato
         const container = document.getElementById("phases-list");
         const target = container.children[newIdx];
         if (target) {
@@ -1068,20 +1068,22 @@ function moveP(i, d) {
     }
 
     function renderPresets() {
-        const c = document.getElementById("presets-list"); 
-        c.innerHTML = "";
-        for (let n in presets) {
-            const d = document.createElement("div"); 
-            d.className = "preset-item";
-            d.innerHTML = `
-                <button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" onclick="applyP('${n}')">${n}</button>
-                <button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button>
-                <button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button>
-                <button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>
-            `;
-            c.appendChild(d);
-        }
+    const c = document.getElementById("presets-list"); 
+    c.innerHTML = "";
+    // 👇 Unica modifica: ordina alfabeticamente le chiavi
+    const sortedNames = Object.keys(presets).sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }));
+    for (let n of sortedNames) {
+        const d = document.createElement("div"); 
+        d.className = "preset-item";
+        d.innerHTML = `
+            <button class="btn-preset-load ${state.lastLoadedPreset===n?'active':''}" onclick="applyP('${n}')">${n}</button>
+            <button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button>
+            <button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button>
+            <button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>
+        `;
+        c.appendChild(d);
     }
+}
     
     function applyP(n) { 
         state.lastLoadedPreset = n; 
