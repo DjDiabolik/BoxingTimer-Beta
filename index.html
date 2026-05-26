@@ -1,4 +1,4 @@
-<!-- BOXING TIMER v7.0.0rev13 (Aggiunto Tutorial del Timer) -->
+<!-- BOXING TIMER v7.0.0rev14 (Aggiunto Tutorial del Timer) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
@@ -8,7 +8,7 @@
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.0rev13</title>
+        <title>BOXING TIMER v7.0.0rev14</title>
 
         <style>
             :root {
@@ -565,7 +565,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.0rev13)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.0rev14)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -902,7 +902,7 @@
 
             let config = {
                 phases: [
-                    { type: 'fight', dur: 180, label: '', random: { active: false, min: 5, max: 10 } },
+                    { type: 'fight', dur: 180, label: '', random: { active: false, min: 5, max: 10 }, tickEnd: { active: false } },
                     {
                         type: 'rest',
                         dur: 60,
@@ -916,7 +916,7 @@
                 volume: 0.7,
                 voiceEnabled: false
             };
-
+            
             let presets = {};
             let state = {
                 timeLeft: 0,
@@ -962,6 +962,7 @@
                 config.phases.forEach((p) => {
                     if (p.type === 'rest' && !p.warning) p.warning = { active: false };
                     if (p.type === 'fight' && !p.random) p.random = { active: false, min: 5, max: 10 };
+                    if (p.type === 'fight' && !p.tickEnd) p.tickEnd = { active: false };
                 });
             }
 
@@ -1173,6 +1174,8 @@
                         if (currentP.type === 'rest') {
                             if (state.timeLeft === 10 && currentP.warning?.active) audio.warning();
                             if (state.timeLeft <= 3) audio.tick();
+                        } else if (currentP.type === 'fight') {
+                            if (state.timeLeft <= 3 && currentP.tickEnd?.active) audio.tick();
                         }
 
                         if (state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) {
@@ -1324,8 +1327,11 @@
                 ${
                     p.type === 'fight'
                         ? `<div class="phase-random-settings">
-                        <button class="random-toggle-btn ${p.random.active ? 'random-active' : ''}" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active ? 'ON' : 'OFF'}</button>
-                        <div class="random-inputs">
+                        <div style="display: flex; gap: 6px; flex: 1; min-width: 0;">
+                            <button class="random-toggle-btn ${p.random.active ? 'random-active' : ''}" style="flex: 1; padding: 6px 4px; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active ? 'ON' : 'OFF'}</button>
+                            <button class="random-toggle-btn ${p.tickEnd?.active ? 'random-active' : ''}" style="flex: 1; padding: 6px 4px; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick="config.phases[${idx}].tickEnd.active=!config.phases[${idx}].tickEnd.active;renderPhases();save()">⏱️ TICK ${p.tickEnd?.active ? 'ON' : 'OFF'}</button>
+                        </div>
+                        <div class="random-inputs" style="flex-shrink: 0;">
                             <input type="number" value="${p.random.min}" onchange="config.phases[${idx}].random.min=parseInt(this.value);save()">-<input type="number" value="${p.random.max}" onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s
                         </div>
                     </div>`
@@ -1348,6 +1354,7 @@
                 } else {
                     p.type = 'fight';
                     p.random = { active: false, min: 5, max: 10 };
+                    p.tickEnd = { active: false };
                 }
                 renderPhases();
                 save();
@@ -1362,7 +1369,7 @@
                 save();
                 renderPhases();
 
-                // SMART SCROLL v7.0.0rev13: Mantiene il focus sulla fase spostata
+                // SMART SCROLL v7.0.0rev14: Mantiene il focus sulla fase spostata
                 const container = document.getElementById('phases-list');
                 const target = container.children[newIdx];
                 if (target) {
@@ -1379,7 +1386,7 @@
             }
 
             function addPhase() {
-                config.phases.push({ type: 'fight', dur: 60, label: '', random: { active: false, min: 5, max: 10 } });
+                config.phases.push({ type: 'fight', dur: 60, label: '', random: { active: false, min: 5, max: 10 }, tickEnd: { active: false } });
                 save();
                 renderPhases();
 
@@ -1397,7 +1404,7 @@
                 save();
                 renderPhases();
 
-                // SMART SCROLL v7.0.0rev13: Centra il clone appena creato
+                // SMART SCROLL v7.0.0rev14: Centra il clone appena creato
                 const container = document.getElementById('phases-list');
                 const target = container.children[newIdx];
                 if (target) {
