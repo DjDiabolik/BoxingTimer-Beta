@@ -1,14 +1,14 @@
-<!-- BOXING TIMER v7.0.0rev14 (Aggiunto Tutorial del Timer) -->
+<!-- BOXING TIMER v7.0.0rev16 (Fix sincronia tick fine fase lavoro) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
         <meta charset="UTF-8" />
-        <link rel="manifest" href="./manifest.json?v=7.0.0rev13" />
+        <link rel="manifest" href="./manifest.json?v=7.0.0rev16" />
         <link rel="icon" type="image/png" href="./maskable_icon_x192.png" />
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.0rev14</title>
+        <title>BOXING TIMER v7.0.0rev16</title>
 
         <style>
             :root {
@@ -565,7 +565,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.0rev14)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.0rev16)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -934,6 +934,7 @@
             let audioCtx, masterGain, compressor, wakeLock, testLoopInterval;
             let gongDebounceTimer = null; // 👈 NUOVO
             const GONG_DEBOUNCE_DELAY = 250; // 👈 NUOVO (millisecondi)
+            let activeSources = []; // 👈 NUOVO: Tracciamento dei nodi audio attivi per cancellazione su skip/reset
 
             // Web Worker per precisione timer
             const workerCode = `
@@ -1079,6 +1080,22 @@
                 source.connect(compressor);
                 const now = startTime || audioCtx.currentTime;
                 source.start(now);
+
+                // Registra la sorgente attiva per poterla interrompere su skip/reset
+                activeSources.push(source);
+                source.onended = () => {
+                    activeSources = activeSources.filter((s) => s !== source);
+                };
+            }
+            
+            // Interrompe immediatamente tutti i suoni futuri schedulati
+            function stopAllScheduledSounds() {
+                activeSources.forEach((source) => {
+                    try {
+                        source.stop();
+                    } catch (e) {}
+                });
+                activeSources = [];
             }
 
             const audio = {
@@ -1100,6 +1117,12 @@
                     // Ora usa il buffer pre-caricato: zero calcoli per la CPU durante il countdown
                     [0, 0.5, 1.0].forEach((off) => playFromBuffer('warning', now + off));
                 },
+                tickCountdown: () => {
+                    ensureAudio();
+                    const now = audioCtx.currentTime;
+                    // Schedula i 3 tick finali in anticipo: immune ai ritardi del loop JS
+                    [0, 1.0, 2.0].forEach((off) => playFromBuffer('tick', now + off));
+                },
                 speak: (text) => {
                     if (!config.voiceEnabled) return;
                     const msg = new SpeechSynthesisUtterance(text);
@@ -1119,6 +1142,11 @@
                     state.isRunning = false;
                     timerWorker.postMessage('stop');
                     btn.textContent = 'RIPRENDI';
+
+                    // 👈 NUOVO: Sospende l'AudioContext per congelare i suoni schedulati in background
+                    if (audioCtx && audioCtx.state === 'running') {
+                        audioCtx.suspend();
+                    }
                 } else {
                     // 👇 NUOVO: cancella eventuale gong in attesa da skip precedenti
                     if (gongDebounceTimer) {
@@ -1129,6 +1157,11 @@
                     state.lastTickTimestamp = Date.now();
                     timerWorker.postMessage('start');
                     btn.textContent = 'PAUSA';
+
+                    // 👈 NUOVO: Ripristina l'AudioContext se era stato sospeso in pausa
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
 
                     if (state.timeLeft === state.sessionPhases[state.phaseIndex].dur) {
                         if (!state.gongJustPlayed) {
@@ -1173,9 +1206,9 @@
 
                         if (currentP.type === 'rest') {
                             if (state.timeLeft === 10 && currentP.warning?.active) audio.warning();
-                            if (state.timeLeft <= 3) audio.tick();
+                            if (state.timeLeft === 3) audio.tickCountdown(); // 👈 MODIFICATO: Schedulazione precisa anche per il riposo
                         } else if (currentP.type === 'fight') {
-                            if (state.timeLeft <= 3 && currentP.tickEnd?.active) audio.tick();
+                            if (state.timeLeft === 3 && currentP.tickEnd?.active) audio.tickCountdown();
                         }
 
                         if (state.nextRandomTick !== -1 && state.timeLeft <= state.nextRandomTick) {
@@ -1213,6 +1246,7 @@
 
             function skipNext() {
                 ensureAudio();
+                stopAllScheduledSounds(); // 👈 NUOVO: Cancella i tick/warning pendenti della fase saltata
                 if (state.isRunning) {
                     if (gongDebounceTimer) clearTimeout(gongDebounceTimer);
                     gongDebounceTimer = setTimeout(() => {
@@ -1242,6 +1276,7 @@
 
             function skipPrev() {
                 ensureAudio();
+                stopAllScheduledSounds(); // 👈 NUOVO: Cancella i tick/warning pendenti della fase saltata
                 if (state.isRunning) {
                     if (gongDebounceTimer) clearTimeout(gongDebounceTimer);
                     gongDebounceTimer = setTimeout(() => {
@@ -1286,6 +1321,7 @@
                     gongDebounceTimer = null;
                 }
                 state.isRunning = false;
+                stopAllScheduledSounds(); // 👈 NUOVO: Interrompe tutti i suoni pendenti all'istante
                 initTimer();
             }
 
