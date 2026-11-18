@@ -1,5 +1,5 @@
-// /sw.js - v7.0.1
-const CACHE_NAME = 'boxing-timer-v7.0.1';
+// /sw.js - v7.0.1rev2
+const CACHE_NAME = 'boxing-timer-v7.0.1rev2';
 
 const ASSETS = [
   './',
@@ -22,14 +22,15 @@ self.addEventListener('activate', e => {
     caches.keys().then(keys =>
       Promise.all(
         keys.map(key => {
-          if (key !== CACHE_NAME) return caches.delete(key);
+          if (key.startsWith('boxing-timer-v') && key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
         })
       )
     )
   );
   self.clients.claim();
 });
-
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });

@@ -1,14 +1,14 @@
-<!-- BOXING TIMER v7.0.1 (Fix sincronia tick fine fase lavoro) -->
+<!-- BOXING TIMER v7.0.1rev2 (Aggiunta controlli da tastiera) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
         <meta charset="UTF-8" />
-        <link rel="manifest" href="./manifest.json?v=7.0.1" />
+        <link rel="manifest" href="./manifest.json?v=7.0.1rev2" />
         <link rel="icon" type="image/png" href="./maskable_icon_x192.png" />
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.1</title>
+        <title>BOXING TIMER v7.0.1rev2</title>
 
         <style>
             :root {
@@ -565,7 +565,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev2)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -2001,6 +2001,30 @@
 
             tutorialModal.addEventListener('click', (e) => {
                 if (e.target === tutorialModal) tutorialModal.close();
+            });
+
+            // --- CONTROLLI DA TASTIERA ---
+            window.addEventListener('keydown', (e) => {
+                // Non intercettare se l'utente sta modificando campi testo o numeri
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+                // Non intercettare se le impostazioni o il tutorial sono aperti
+                const settings = document.getElementById('settings-panel');
+                const tutorial = document.getElementById('tutorial-modal');
+                if ((settings && settings.style.display === 'flex') || (tutorial && tutorial.open)) return;
+
+                if (e.code === 'Space') {
+                    e.preventDefault(); // Previene lo scroll della pagina
+                    toggleTimer();
+                } else if (e.code === 'ArrowRight') {
+                    e.preventDefault();
+                    skipNext();
+                } else if (e.code === 'ArrowLeft') {
+                    e.preventDefault();
+                    skipPrev();
+                } else if (e.code === 'KeyR') {
+                    resetTimer();
+                }
             });
         </script>
     </body>
