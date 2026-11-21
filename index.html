@@ -1,14 +1,14 @@
-<!-- BOXING TIMER v7.0.1rev2 (Aggiunta controlli da tastiera) -->
+<!-- BOXING TIMER v7.0.1rev3 (Fix creazioni Buffer e Fix nomi preset) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
         <meta charset="UTF-8" />
-        <link rel="manifest" href="./manifest.json?v=7.0.1rev2" />
+        <link rel="manifest" href="./manifest.json?v=7.0.1rev3" />
         <link rel="icon" type="image/png" href="./maskable_icon_x192.png" />
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.1rev2</title>
+        <title>BOXING TIMER v7.0.1rev3</title>
 
         <style>
             :root {
@@ -565,7 +565,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev2)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev3)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -1534,11 +1534,18 @@
                     const d = document.createElement('div');
                     d.className = 'preset-item';
                     d.innerHTML = `
-                <button class="btn-preset-load ${state.lastLoadedPreset === n ? 'active' : ''}" onclick="applyP('${n}')">${n}</button>
-                <button class="btn-preset-icon" onclick="exportSinglePreset('${n}')">📤</button>
-                <button class="btn-preset-icon" onclick="renamePreset('${n}')">✎</button>
-                <button class="btn-preset-icon btn-preset-del" onclick="deletePreset('${n}')">✕</button>
+                <button class="btn-preset-load ${state.lastLoadedPreset === n ? 'active' : ''}"></button>
+                <button class="btn-preset-icon">📤</button>
+                <button class="btn-preset-icon">✎</button>
+                <button class="btn-preset-icon btn-preset-del">✕</button>
             `;
+                    const [btnLoad, btnExport, btnRename, btnDel] = d.querySelectorAll('button');
+                    btnLoad.textContent = n;
+                    btnLoad.onclick = () => applyP(n);
+                    btnExport.onclick = () => exportSinglePreset(n);
+                    btnRename.onclick = () => renamePreset(n);
+                    btnDel.onclick = () => deletePreset(n);
+
                     fragment.appendChild(d);
                 }
                 c.appendChild(fragment);
@@ -1703,15 +1710,23 @@
             }
 
             function updateAudioConfig() {
+                let needBufferRegen = false;
                 ['gong', 'tick', 'sprint'].forEach((k) => {
-                    config.audio[k].type = document.getElementById(`wave-${k}`).value;
-                    config.audio[k].freq = parseInt(document.getElementById(`freq-${k}`).value);
+                    const newType = document.getElementById(`wave-${k}`).value;
+                    const newFreq = parseInt(document.getElementById(`freq-${k}`).value);
+
+                    if (config.audio[k].type !== newType || config.audio[k].freq !== newFreq) {
+                        config.audio[k].type = newType;
+                        config.audio[k].freq = newFreq;
+                        needBufferRegen = true;
+                    }
+
                     document.getElementById(`val-${k}`).textContent = config.audio[k].freq;
                     config.audio[k].vol = parseFloat(document.getElementById(`vol-${k}`).value);
                     document.getElementById(`val-vol-${k}`).textContent = Math.round(config.audio[k].vol * 100) + '%';
                 });
                 updateChannelGains();
-                if (audioCtx) generateAudioBuffers(); // <-- aggiungi questa riga
+                if (needBufferRegen && audioCtx) generateAudioBuffers();
                 save();
             }
                         
