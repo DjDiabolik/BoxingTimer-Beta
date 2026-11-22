@@ -1,14 +1,14 @@
-<!-- BOXING TIMER v7.0.1rev3 (Fix creazioni Buffer e Fix nomi preset) -->
+<!-- BOXING TIMER v7.0.1rev4 (Nuovo pannello impostazioni rivisto completamente - Disattivato VOCALE nello stato era meno che un alpha) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
         <meta charset="UTF-8" />
-        <link rel="manifest" href="./manifest.json?v=7.0.1rev3" />
+        <link rel="manifest" href="./manifest.json?v=7.0.1rev4" />
         <link rel="icon" type="image/png" href="./maskable_icon_x192.png" />
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.1rev3</title>
+        <title>BOXING TIMER v7.0.1rev4</title>
 
         <style>
             :root {
@@ -306,35 +306,57 @@
             .phase-header {
                 display: flex;
                 align-items: center;
-                gap: 4px;
-                padding: 8px 4px;
+                gap: 5px;
+                padding: 8px 6px;
                 background: #2a2a2a;
+            }
+
+            .phase-dur-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 7px 10px;
+                background: #242424;
+                border-top: 1px solid #333;
+                font-size: 0.8rem;
+                color: #ccc;
+            }
+
+            .phase-dur-group {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                font-weight: bold;
             }
 
             .sort-controls {
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
+                flex-shrink: 0;
             }
 
             .btn-sort {
                 background: #444;
                 color: #ccc;
-                width: 28px;
-                height: 22px;
+                width: 26px;
+                height: 20px;
+                padding: 0;
+                flex: 0 0 auto;
                 border-radius: 4px;
-                font-size: 0.65rem;
+                font-size: 0.62rem;
                 border: none;
             }
 
             .phase-dur-input {
-                width: 50px;
-                padding: 8px 2px;
+                width: 52px;
+                padding: 6px 4px;
                 background: #111;
                 color: white;
                 border: 1px solid #444;
                 border-radius: 5px;
                 text-align: center;
+                font-size: 0.9rem;
             }
 
             .phase-label-input {
@@ -345,17 +367,18 @@
                 color: #fff;
                 border: 1px solid #444;
                 border-radius: 5px;
-                font-size: 0.8rem;
+                font-size: 0.85rem;
             }
 
             .type-toggle {
-                width: 65px;
-                padding: 10px 2px;
+                width: 62px;
+                flex-shrink: 0;
+                padding: 9px 2px;
                 border-radius: 5px;
                 text-align: center;
                 font-weight: bold;
                 cursor: pointer;
-                font-size: 0.6rem;
+                font-size: 0.62rem;
                 text-transform: uppercase;
             }
 
@@ -370,7 +393,11 @@
             .btn-phase-action {
                 background: #444;
                 border: none;
-                padding: 8px;
+                padding: 0;
+                width: 30px;
+                height: 34px;
+                flex: 0 0 auto;
+                font-size: 0.9rem;
                 border-radius: 5px;
                 color: white;
                 cursor: pointer;
@@ -378,13 +405,18 @@
 
             .phase-random-settings {
                 background: #1a1a1a;
-                padding: 10px;
+                padding: 8px 10px;
                 display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px; /* Aggiunto spazio di sicurezza tra pulsante e input */
+                flex-direction: column;
+                gap: 8px;
                 border-top: 1px solid #333;
                 font-size: 0.8rem;
+            }
+
+            .toggle-pair {
+                display: flex;
+                gap: 8px;
+                width: 100%;
             }
 
             .random-toggle-btn {
@@ -395,9 +427,31 @@
                 border: none;
             }
 
-            .random-active {
+            .phase-random-settings .random-toggle-btn {
+                padding: 7px 8px;
+                border-radius: 5px;
+                color: #999;
+                font-size: 0.72rem;
+                flex: 1;
+                white-space: nowrap;
+            }
+
+            .random-active,
+            .phase-random-settings .random-active {
                 background: var(--accent);
                 color: white;
+            }
+
+            .random-subrow {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #222;
+                padding: 6px 10px;
+                border-radius: 6px;
+                border: 1px dashed #3d3d3d;
+                font-size: 0.78rem;
+                color: #ccc;
             }
 
             .random-inputs {
@@ -407,12 +461,14 @@
             }
 
             .random-inputs input {
-                width: 60px;
-                background: #333;
+                width: 52px;
+                background: #111;
                 color: white;
-                border: none;
-                padding: 5px;
+                border: 1px solid #444;
+                border-radius: 4px;
+                padding: 5px 2px;
                 text-align: center;
+                font-size: 0.85rem;
             }
 
             .lab-group {
@@ -565,7 +621,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev3)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev4)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -753,7 +809,7 @@
                             <span id="val-vol" style="width: 40px; text-align: right">70%</span>
                         </div>
                     </div>
-                    <div class="lab-group">
+<!--                    <div class="lab-group">
                         <div class="lab-row">
                             <span style="color: var(--accent); font-weight: bold">SINTESI VOCALE (ALPHA)</span>
                             <button id="voice-toggle-btn" class="random-toggle-btn" onclick="toggleVoice()">
@@ -761,6 +817,7 @@
                             </button>
                         </div>
                     </div>
+                    -->
                     <div class="lab-group">
                         <div class="lab-row">
                             <span>Colore LAVORO:</span>
@@ -1190,13 +1247,13 @@
                     // Schedula i 3 tick finali in anticipo: immune ai ritardi del loop JS
                     [0, 1.0, 2.0].forEach((off) => playFromBuffer('tick', now + off));
                 },
-                speak: (text) => {
-                    if (!config.voiceEnabled) return;
-                    const msg = new SpeechSynthesisUtterance(text);
-                    msg.lang = 'it-IT';
-                    msg.volume = config.volume;
-                    window.speechSynthesis.speak(msg);
-                }
+                // speak: (text) => {
+                //    if (!config.voiceEnabled) return;
+                //    const msg = new SpeechSynthesisUtterance(text);
+                //    msg.lang = 'it-IT';
+                //    msg.volume = config.volume;
+                //    window.speechSynthesis.speak(msg);
+                // }
             };
 
             // --- AZIONI TIMER ---
@@ -1241,13 +1298,13 @@
                             );
                         }
 
-                        if (config.voiceEnabled) {
-                            const p = state.sessionPhases[state.phaseIndex];
-                            setTimeout(
-                                () => audio.speak(p.type === 'fight' ? 'Round ' + state.currentRound : 'Riposo'),
-                                1000
-                            );
-                        }
+                        // if (config.voiceEnabled) {
+                        //    const p = state.sessionPhases[state.phaseIndex];
+                        //    setTimeout(
+                        //        () => audio.speak(p.type === 'fight' ? 'Round ' + state.currentRound : 'Riposo'),
+                        //        1000
+                        //    );
+                        // }
                     }
 
                     state.gongJustPlayed = false;
@@ -1303,9 +1360,9 @@
                 state.timeLeft = p.dur;
                 document.getElementById('status-display').textContent = getPhaseLabel(p);
 
-                if (config.voiceEnabled) {
-                    setTimeout(() => audio.speak(p.type === 'fight' ? 'Round ' + state.currentRound : 'Riposo'), 1000);
-                }
+                // if (config.voiceEnabled) {
+                //    setTimeout(() => audio.speak(p.type === 'fight' ? 'Round ' + state.currentRound : 'Riposo'), 1000);
+                // }
 
                 setNextR();
                 updateTheme();
@@ -1394,18 +1451,99 @@
 
             // --- GESTIONE IMPOSTAZIONI E PRESET ---
 
-            function calculateTotals() {
+function calculateTotals() {
                 let work = 0;
                 let total = 0;
                 config.phases.forEach((p) => {
-                    total += p.dur;
-                    if (p.type === 'fight') work += p.dur;
+                    const d = Math.max(0, parseInt(p.dur, 10) || 0);
+                    total += d;
+                    if (p.type === 'fight') work += d;
                 });
                 const f = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
                 document.getElementById('total-work-time').textContent = f(work);
                 document.getElementById('total-circuit-time').textContent = f(total);
             }
 
+            function bindDurationInputs(minInput, secInput, idx) {
+                const syncDur = (normalizeFields) => {
+                    let m = parseInt(minInput.value, 10);
+                    let s = parseInt(secInput.value, 10);
+
+                    if (minInput.value !== '' && (isNaN(m) || m < 0)) {
+                        m = 0;
+                        minInput.value = 0;
+                    } else if (m > 99) {
+                        m = 99;
+                        minInput.value = 99;
+                    }
+
+                    if (secInput.value !== '' && (isNaN(s) || s < 0)) {
+                        s = 0;
+                        secInput.value = 0;
+                    } else if (s > 59) {
+                        s = 59;
+                        secInput.value = 59;
+                    }
+
+                    const effM = isNaN(m) ? 0 : m;
+                    const effS = isNaN(s) ? 0 : s;
+
+                    if (normalizeFields) {
+                        let finalM = effM;
+                        let finalS = effS;
+                        if (finalM === 0 && finalS === 0) finalS = 1;
+                        minInput.value = finalM;
+                        secInput.value = finalS;
+                        config.phases[idx].dur = finalM * 60 + finalS;
+                    } else {
+                        config.phases[idx].dur = Math.max(1, effM * 60 + effS);
+                    }
+                    save();
+                    calculateTotals();
+                };
+
+                minInput.oninput = () => syncDur(false);
+                secInput.oninput = () => syncDur(false);
+                minInput.onchange = () => syncDur(true);
+                secInput.onchange = () => syncDur(true);
+            }
+
+            function bindRangeInputs(minInput, maxInput, idx) {
+                const syncRange = (normalizeFields, changed) => {
+                    let rMin = parseInt(minInput.value, 10);
+                    let rMax = parseInt(maxInput.value, 10);
+
+                    if (minInput.value !== '' && (isNaN(rMin) || rMin < 1)) {
+                        rMin = 1;
+                        if (normalizeFields) minInput.value = 1;
+                    }
+                    if (maxInput.value !== '' && (isNaN(rMax) || rMax < 1)) {
+                        rMax = 1;
+                        if (normalizeFields) maxInput.value = 1;
+                    }
+
+                    if (normalizeFields) {
+                        if (isNaN(rMin) || rMin < 1) rMin = 1;
+                        if (isNaN(rMax) || rMax < 1) rMax = 1;
+                        if (changed === 'min' && rMin > rMax) rMax = rMin;
+                        if (changed === 'max' && rMax < rMin) rMin = rMax;
+                        minInput.value = rMin;
+                        maxInput.value = rMax;
+                        config.phases[idx].random.min = rMin;
+                        config.phases[idx].random.max = rMax;
+                    } else if (!isNaN(rMin) && !isNaN(rMax) && rMin >= 1 && rMax >= 1) {
+                        config.phases[idx].random.min = rMin;
+                        config.phases[idx].random.max = Math.max(rMin, rMax);
+                    }
+                    save();
+                };
+
+                minInput.oninput = () => syncRange(false, 'min');
+                maxInput.oninput = () => syncRange(false, 'max');
+                minInput.onchange = () => syncRange(true, 'min');
+                maxInput.onchange = () => syncRange(true, 'max');
+            }
+            
             function renderPhases() {
                 const container = document.getElementById('phases-list');
                 // Ottimizzazione: DocumentFragment riduce i reflow del browser a 1 solo colpo
@@ -1413,6 +1551,10 @@
                 container.innerHTML = '';
 
                 config.phases.forEach((p, idx) => {
+                    const safeDur = Math.max(1, parseInt(p.dur, 10) || 1);
+                    const mins = Math.floor(safeDur / 60);
+                    const secs = safeDur % 60;
+
                     const div = document.createElement('div');
                     div.className = 'phase-item';
                     div.innerHTML = `
@@ -1421,28 +1563,60 @@
                         <button class="btn-sort" ${idx === 0 ? 'disabled' : ''} onclick="moveP(${idx},-1)">▲</button>
                         <button class="btn-sort" ${idx === config.phases.length - 1 ? 'disabled' : ''} onclick="moveP(${idx},1)">▼</button>
                     </div>
-                    <input type="number" class="phase-dur-input" value="${p.dur}" onchange="config.phases[${idx}].dur=parseInt(this.value);save();calculateTotals()">
-                    <input type="text" class="phase-label-input" placeholder="${p.type === 'fight' ? 'COMBATTI!' : 'RIPOSO'}" value="${p.label || ''}" onchange="config.phases[${idx}].label=this.value;save()">
+                    <input type="text" class="phase-label-input" placeholder="${p.type === 'fight' ? 'COMBATTI!' : 'RIPOSO'}">
                     <div class="type-toggle ${p.type === 'fight' ? 'type-fight' : 'type-rest'}" onclick="togglePhaseType(${idx})">${p.type === 'fight' ? 'LAVORO' : 'RIPOSO'}</div>
                     <button onclick="clonePhase(${idx})" class="btn-phase-action">📄</button>
-                    <button onclick="config.phases.splice(${idx},1);renderPhases();save();calculateTotals()" class="btn-phase-action">✕</button>
+                    <button onclick="if(config.phases.length>1){config.phases.splice(${idx},1);renderPhases();save();calculateTotals()}" class="btn-phase-action" ${config.phases.length <= 1 ? 'disabled' : ''}>✕</button>
+                </div>
+                <div class="phase-dur-row">
+                    <span>Durata fase</span>
+                    <div class="phase-dur-group">
+                        <input type="number" class="phase-dur-input dur-min" min="0" max="99" value="${mins}" aria-label="Minuti">
+                        <span>m :</span>
+                        <input type="number" class="phase-dur-input dur-sec" min="0" max="59" value="${secs}" aria-label="Secondi">
+                        <span>s</span>
+                    </div>
                 </div>
                 ${
                     p.type === 'fight'
                         ? `<div class="phase-random-settings">
-                        <div style="display: flex; gap: 6px; flex: 1; min-width: 0;">
-                            <button class="random-toggle-btn ${p.random.active ? 'random-active' : ''}" style="flex: 1; padding: 6px 4px; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active ? 'ON' : 'OFF'}</button>
-                            <button class="random-toggle-btn ${p.tickEnd?.active ? 'random-active' : ''}" style="flex: 1; padding: 6px 4px; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick="config.phases[${idx}].tickEnd.active=!config.phases[${idx}].tickEnd.active;renderPhases();save()">⏱️ TICK ${p.tickEnd?.active ? 'ON' : 'OFF'}</button>
+                        <div class="toggle-pair">
+                            <button class="random-toggle-btn ${p.tickEnd?.active ? 'random-active' : ''}" onclick="if(!config.phases[${idx}].tickEnd)config.phases[${idx}].tickEnd={active:false};config.phases[${idx}].tickEnd.active=!config.phases[${idx}].tickEnd.active;renderPhases();save()">⏱️ TICK 3-2-1 ${p.tickEnd?.active ? 'ON' : 'OFF'}</button>
+                            <button class="random-toggle-btn ${p.random.active ? 'random-active' : ''}" onclick="config.phases[${idx}].random.active=!config.phases[${idx}].random.active;renderPhases();save()">⚡ SCATTI ${p.random.active ? 'ON' : 'OFF'}</button>
                         </div>
-                        <div class="random-inputs" style="flex-shrink: 0;">
-                            <input type="number" value="${p.random.min}" onchange="config.phases[${idx}].random.min=parseInt(this.value);save()">-<input type="number" value="${p.random.max}" onchange="config.phases[${idx}].random.max=parseInt(this.value);save()"> s
-                        </div>
+                        ${
+                            p.random.active
+                                ? `<div class="random-subrow">
+                                    <span>Intervallo scatti:</span>
+                                    <div class="random-inputs">
+                                        <input type="number" class="rand-min" min="1" value="${p.random.min}">
+                                        <span>-</span>
+                                        <input type="number" class="rand-max" min="1" value="${p.random.max}">
+                                        <span>s</span>
+                                    </div>
+                                </div>`
+                                : ''
+                        }
                     </div>`
                         : `<div class="phase-random-settings">
-                        <button class="random-toggle-btn ${p.warning?.active ? 'random-active' : ''}" onclick="config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI ${p.warning?.active ? 'ON' : 'OFF'}</button>
+                        <button class="random-toggle-btn ${p.warning?.active ? 'random-active' : ''}" onclick="if(!config.phases[${idx}].warning)config.phases[${idx}].warning={active:false};config.phases[${idx}].warning.active=!config.phases[${idx}].warning.active;renderPhases();save()">🔔 FUORI SECONDI ${p.warning?.active ? 'ON' : 'OFF'}</button>
                     </div>`
                 }
             `;
+
+                    const labelInput = div.querySelector('.phase-label-input');
+                    labelInput.value = p.label || '';
+                    labelInput.onchange = (e) => {
+                        config.phases[idx].label = e.target.value;
+                        save();
+                    };
+
+                    bindDurationInputs(div.querySelector('.dur-min'), div.querySelector('.dur-sec'), idx);
+
+                    if (p.type === 'fight' && p.random.active) {
+                        bindRangeInputs(div.querySelector('.rand-min'), div.querySelector('.rand-max'), idx);
+                    }
+
                     fragment.appendChild(div);
                 });
                 container.appendChild(fragment);
@@ -1682,9 +1856,9 @@
                 document.getElementById('col-rest').value = config.theme.rest;
                 document.getElementById('master-vol').value = config.volume;
                 document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + '%';
-                document.getElementById('voice-toggle-btn').textContent = config.voiceEnabled ? 'VOCE ON' : 'VOCE OFF';
-                document.getElementById('voice-toggle-btn').className =
-                    'random-toggle-btn ' + (config.voiceEnabled ? 'random-active' : '');
+                // document.getElementById('voice-toggle-btn').textContent = config.voiceEnabled ? 'VOCE ON' : 'VOCE OFF';
+                // document.getElementById('voice-toggle-btn').className =
+                //    'random-toggle-btn ' + (config.voiceEnabled ? 'random-active' : '');
                 ['gong', 'tick', 'sprint'].forEach((k) => {
                     document.getElementById(`wave-${k}`).value = config.audio[k].type;
                     document.getElementById(`freq-${k}`).value = config.audio[k].freq;
@@ -1745,11 +1919,11 @@
                 if (audioCtx) generateAudioBuffers();
             }
             
-            function toggleVoice() {
-                config.voiceEnabled = !config.voiceEnabled;
-                updateLabUI();
-                save();
-            }
+            // function toggleVoice() {
+            //    config.voiceEnabled = !config.voiceEnabled;
+            //    updateLabUI();
+            //    save();
+            // }
 
             function toggleLoopTest() {
                 ensureAudio();
