@@ -1,14 +1,14 @@
-<!-- BOXING TIMER v7.0.1rev4 (Nuovo pannello impostazioni rivisto completamente - Disattivato VOCALE nello stato era meno che un alpha) -->
+<!-- BOXING TIMER v7.0.1rev5 (Nuovo pannello impostazioni rivisto completamente - Disattivato VOCALE nello stato era meno che un alpha) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
         <meta charset="UTF-8" />
-        <link rel="manifest" href="./manifest.json?v=7.0.1rev4" />
+        <link rel="manifest" href="./manifest.json?v=7.0.1rev5" />
         <link rel="icon" type="image/png" href="./maskable_icon_x192.png" />
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.1rev4</title>
+        <title>BOXING TIMER v7.0.1rev5</title>
 
         <style>
             :root {
@@ -621,7 +621,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev4)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev5)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -1749,11 +1749,14 @@ function calculateTotals() {
             function saveCurrentAsPreset() {
                 const n = document.getElementById('preset-name').value.trim();
                 if (!n) return;
+                if (presets[n] && !confirm(`Esiste già un preset chiamato "${n}". Vuoi sovrascriverlo?`)) {
+                    return;
+                }
                 presets[n] = JSON.parse(JSON.stringify(config));
                 applyP(n);
                 document.getElementById('preset-name').value = '';
             }
-
+            
             function deletePreset(name) {
                 if (confirm(`Eliminare "${name}"?`)) {
                     delete presets[name];
@@ -1764,15 +1767,19 @@ function calculateTotals() {
 
             function renamePreset(oldName) {
                 const n = prompt('Nuovo nome:', oldName);
-                if (n && n.trim() !== '' && n !== oldName) {
-                    presets[n] = presets[oldName];
+                if (n && n.trim() !== '' && n.trim() !== oldName) {
+                    const finalName = n.trim();
+                    if (presets[finalName] && !confirm(`Esiste già un preset chiamato "${finalName}". Vuoi sovrascriverlo?`)) {
+                        return;
+                    }
+                    presets[finalName] = presets[oldName];
                     delete presets[oldName];
-                    if (state.lastLoadedPreset === oldName) state.lastLoadedPreset = n;
+                    if (state.lastLoadedPreset === oldName) state.lastLoadedPreset = finalName;
                     save();
                     renderPresets();
                 }
             }
-
+            
             // --- EXPORT / IMPORT ---
 
             function exportData() {
@@ -1784,25 +1791,46 @@ function calculateTotals() {
                 a.href = URL.createObjectURL(blob);
                 a.download = `BoxingTimer_Backup_${ts}.json`;
                 a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
             }
 
             function exportSinglePreset(name) {
+                const safeName = name.replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
                 const data = { config: presets[name], exportType: 'SINGLE_PRESET', presetName: name };
                 const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = `Preset_${name.replace(/\s+/g, '_')}.json`;
+                a.download = `Preset_${safeName}.json`;
                 a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
             }
-
+            
             function importData(event) {
                 const file = event.target.files[0];
                 if (!file) return;
+
+                const isValidConfig = (cfg) => {
+                    return Boolean(
+                        cfg &&
+                        typeof cfg === 'object' &&
+                        Array.isArray(cfg.phases) &&
+                        cfg.phases.length > 0 &&
+                        cfg.phases.every((p) => p && typeof p === 'object' && Number(p.dur) > 0)
+                    );
+                };
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
                         const imported = JSON.parse(e.target.result);
+                        if (!imported || typeof imported !== 'object') {
+                            throw new Error('Dati non validi');
+                        }
+
                         if (imported.exportType === 'FULL_BACKUP') {
+                            if (!imported.presets || typeof imported.presets !== 'object' || !isValidConfig(imported.config)) {
+                                throw new Error('Backup incompleto o corrotto');
+                            }
                             const mode = confirm(
                                 'Backup Completo rilevato.\n\nPremi OK per SOVRASCRIVERE tutti i preset correnti.\nPremi ANNULLA per AGGIUNGERE i nuovi preset alla lista attuale.'
                             );
@@ -1813,7 +1841,13 @@ function calculateTotals() {
                                 Object.assign(presets, imported.presets);
                             }
                         } else if (imported.exportType === 'SINGLE_PRESET') {
-                            let name = imported.presetName || 'Imported Preset';
+                            if (!isValidConfig(imported.config)) {
+                                throw new Error('Configurazione preset corrotta o non valida');
+                            }
+                            let name = (imported.presetName && typeof imported.presetName === 'string')
+                                ? imported.presetName.trim()
+                                : 'Imported Preset';
+                            if (!name) name = 'Imported Preset';
                             let finalName = name;
                             let count = 1;
                             while (presets[finalName]) {
@@ -1822,7 +1856,10 @@ function calculateTotals() {
                             presets[finalName] = imported.config;
                             alert(`Preset "${finalName}" importato correttamente.`);
                         } else {
-                            Object.assign(presets, imported.presets || {});
+                            if (!imported.presets || typeof imported.presets !== 'object') {
+                                throw new Error('Struttura non riconosciuta');
+                            }
+                            Object.assign(presets, imported.presets);
                         }
                         upgradeData();
                         applyThemeToCSS();
@@ -1831,12 +1868,14 @@ function calculateTotals() {
                         renderPhases();
                         renderPresets();
                     } catch (err) {
-                        alert('Errore nel file di importazione.');
+                        alert('Errore nel file di importazione: file corrotto o formato non supportato.');
+                    } finally {
+                        event.target.value = '';
                     }
                 };
                 reader.readAsText(file);
             }
-
+            
             // --- LABORATORIO ---
 
             function openLab() {
