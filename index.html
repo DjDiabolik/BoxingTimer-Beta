@@ -1,14 +1,14 @@
-<!-- BOXING TIMER v7.0.1rev5 (Nuovo pannello impostazioni rivisto completamente - Disattivato VOCALE nello stato era meno che un alpha) -->
+<!-- BOXING TIMER v7.0.1rev6 (Nuovo pannello impostazioni rivisto completamente - Disattivato VOCALE nello stato era meno che un alpha) -->
 <!DOCTYPE html>
 <html lang="it">
     <head>
         <meta charset="UTF-8" />
-        <link rel="manifest" href="./manifest.json?v=7.0.1rev5" />
+        <link rel="manifest" href="./manifest.json?v=7.0.1rev6" />
         <link rel="icon" type="image/png" href="./maskable_icon_x192.png" />
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>BOXING TIMER v7.0.1rev5</title>
+        <title>BOXING TIMER v7.0.1rev6</title>
 
         <style>
             :root {
@@ -288,6 +288,10 @@
 
             .btn-preset-del {
                 background: #b71c1c;
+            }
+
+            .btn-preset-save {
+                background: var(--accent);
             }
 
             #phases-list {
@@ -621,7 +625,7 @@
                 <div id="section-presets" class="setting-section">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev5)</h3>
+                        <h3 style="margin: 0">PRESET ALLENAMENTO (v7.0.1rev6)</h3>
                         <button
                             id="btn-refresh-app"
                             onclick="triggerUpdate()"
@@ -641,34 +645,6 @@
                         </button>
                     </div>
                     <div id="presets-list"></div>
-                    <div
-                        id="active-preset-controls"
-                        style="
-                            display: none;
-                            margin-bottom: 15px;
-                            padding: 10px;
-                            background: rgba(33, 150, 243, 0.1);
-                            border-radius: 8px;
-                            border: 1px dashed var(--accent);
-                        ">
-                        <p style="margin: 0 0 10px 0; font-size: 0.8rem; color: var(--accent)">
-                            Modifiche in: <b id="active-preset-name"></b>
-                        </p>
-                        <button
-                            id="btn-overwrite"
-                            onclick="overwritePreset()"
-                            style="
-                                width: 100%;
-                                background: var(--accent);
-                                padding: 10px;
-                                border: none;
-                                border-radius: 8px;
-                                color: white;
-                                font-weight: bold;
-                            ">
-                            AGGIORNA PRESET
-                        </button>
-                    </div>
                     <div style="display: flex; gap: 10px">
                         <input
                             type="text"
@@ -1016,6 +992,7 @@
                 isRunning: false,
                 nextRandomTick: -1,
                 lastLoadedPreset: null,
+                presetDirty: false,
                 lastTickTimestamp: 0,
                 gongJustPlayed: false,
                 sessionPhases: []
@@ -1709,13 +1686,16 @@ function calculateTotals() {
                     d.className = 'preset-item';
                     d.innerHTML = `
                 <button class="btn-preset-load ${state.lastLoadedPreset === n ? 'active' : ''}"></button>
+                ${state.lastLoadedPreset === n && state.presetDirty ? '<button class="btn-preset-icon btn-preset-save">💾</button>' : ''}
                 <button class="btn-preset-icon">📤</button>
                 <button class="btn-preset-icon">✎</button>
                 <button class="btn-preset-icon btn-preset-del">✕</button>
             `;
-                    const [btnLoad, btnExport, btnRename, btnDel] = d.querySelectorAll('button');
-                    btnLoad.textContent = n;
-                    btnLoad.onclick = () => applyP(n);
+                    const [btnLoad, btnExport, btnRename, btnDel] = d.querySelectorAll('button:not(.btn-preset-save)');
+                    const btnSave = d.querySelector('.btn-preset-save');
+                    if (btnSave) btnSave.onclick = () => overwritePreset();
+                    btnLoad.textContent = n + (state.lastLoadedPreset === n && state.presetDirty ? ' *' : '');
+                    btnLoad.onclick = () => requestLoadPreset(n);
                     btnExport.onclick = () => exportSinglePreset(n);
                     btnRename.onclick = () => renamePreset(n);
                     btnDel.onclick = () => deletePreset(n);
@@ -1725,24 +1705,37 @@ function calculateTotals() {
                 c.appendChild(fragment);
             }
 
+            function requestLoadPreset(n) {
+                const cur = state.lastLoadedPreset;
+                if (state.presetDirty && cur && presets[cur]) {
+                    const msg = (cur === n)
+                        ? `Scartare le modifiche e ripristinare il preset "${n}" allo stato salvato?`
+                        : `Il preset "${cur}" ha modifiche non salvate.\n\nVuoi SCARTARLE e caricare "${n}"?`;
+                    if (!confirm(msg)) {
+                        return;
+                    }
+                }
+                applyP(n);
+            }
+
             function applyP(n) {
                 state.lastLoadedPreset = n;
+                state.presetDirty = false;
                 config = JSON.parse(JSON.stringify(presets[n]));
                 upgradeData();
                 applyThemeToCSS();
                 updateLabUI();
-                document.getElementById('active-preset-controls').style.display = 'block';
-                document.getElementById('active-preset-name').textContent = n;
                 renderPhases();
                 renderPresets();
-                save();
+                save(true);
             }
 
             function overwritePreset() {
                 if (state.lastLoadedPreset) {
                     presets[state.lastLoadedPreset] = JSON.parse(JSON.stringify(config));
-                    save();
-                    alert('Preset Aggiornato!');
+                    state.presetDirty = false;
+                    save(true);
+                    renderPresets();
                 }
             }
 
@@ -1760,7 +1753,11 @@ function calculateTotals() {
             function deletePreset(name) {
                 if (confirm(`Eliminare "${name}"?`)) {
                     delete presets[name];
-                    save();
+                    if (state.lastLoadedPreset === name) {
+                        state.lastLoadedPreset = null;
+                        state.presetDirty = false;
+                    }
+                    save(true);
                     renderPresets();
                 }
             }
@@ -1775,7 +1772,7 @@ function calculateTotals() {
                     presets[finalName] = presets[oldName];
                     delete presets[oldName];
                     if (state.lastLoadedPreset === oldName) state.lastLoadedPreset = finalName;
-                    save();
+                    save(true);
                     renderPresets();
                 }
             }
@@ -1837,8 +1834,27 @@ function calculateTotals() {
                             if (mode) {
                                 presets = imported.presets;
                                 config = imported.config;
+                                state.lastLoadedPreset = null;
+                                state.presetDirty = false;
                             } else {
-                                Object.assign(presets, imported.presets);
+                                Object.keys(imported.presets).forEach((k) => {
+                                    const incoming = imported.presets[k];
+                                    if (!isValidConfig(incoming)) return;
+
+                                    if (!presets[k]) {
+                                        // Preset mancante: ripristinato con il nome originale
+                                        presets[k] = incoming;
+                                    } else if (JSON.stringify(presets[k]) !== JSON.stringify(incoming)) {
+                                        // Stesso nome ma contenuti diversi: salvaguarda l'originale e crea il suffisso
+                                        let finalName = k;
+                                        let count = 1;
+                                        while (presets[finalName]) {
+                                            finalName = `${k} (${count++})`;
+                                        }
+                                        presets[finalName] = incoming;
+                                    }
+                                    // Se JSON.stringify è identico, non fa nulla (ignora il duplicato perfetto)
+                                });
                             }
                         } else if (imported.exportType === 'SINGLE_PRESET') {
                             if (!isValidConfig(imported.config)) {
@@ -1864,7 +1880,7 @@ function calculateTotals() {
                         upgradeData();
                         applyThemeToCSS();
                         updateLabUI();
-                        save();
+                        save(true);
                         renderPhases();
                         renderPresets();
                     } catch (err) {
@@ -1912,14 +1928,14 @@ function calculateTotals() {
                 config.volume = parseFloat(document.getElementById('master-vol').value);
                 document.getElementById('val-vol').textContent = Math.round(config.volume * 100) + '%';
                 updateMasterGain();
-                save();
+                save(true);
             }
 
             function updateColors() {
                 config.theme.fight = document.getElementById('col-fight').value;
                 config.theme.rest = document.getElementById('col-rest').value;
                 applyThemeToCSS();
-                save();
+                save(true);
             }
 
             function updateAudioConfig() {
@@ -1940,21 +1956,21 @@ function calculateTotals() {
                 });
                 updateChannelGains();
                 if (needBufferRegen && audioCtx) generateAudioBuffers();
-                save();
+                save(true);
             }
                         
             function resetColors() {
                 config.theme = JSON.parse(JSON.stringify(DEFAULT_THEME));
                 updateLabUI();
                 applyThemeToCSS();
-                save();
+                save(true);
             }
 
             function resetAudio() {
                 config.audio = JSON.parse(JSON.stringify(DEFAULT_AUDIO));
                 updateLabUI();
                 updateChannelGains(); // 👈 Allinea istantaneamente anche i canali audio hardware al 100%
-                save();
+                save(true);
                 if (audioCtx) generateAudioBuffers();
             }
             
@@ -2004,9 +2020,13 @@ function calculateTotals() {
                 }
             }
 
-            function save() {
+            function save(skipDirty) {
                 localStorage.setItem('boxing_timer_config', JSON.stringify(config));
                 localStorage.setItem('boxing_timer_presets', JSON.stringify(presets));
+                if (!skipDirty && state.lastLoadedPreset && !state.presetDirty) {
+                    state.presetDirty = true;
+                    renderPresets();
+                }
             }
 
             function load() {
